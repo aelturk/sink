@@ -1,0 +1,2025 @@
+
+input magnitude = 3;
+input averageType = AverageType.EXPONENTIAL;
+input price = close;
+input displace = 0;
+input length = 13;
+input Num_Dev_Dn = -2.0;
+input Num_Dev_up = 2.0;
+def shifter = 50 ;   
+# define and plot the most recent peak
+def peak = high >= Highest(high[1], magnitude) and high >= Highest(high[-magnitude], magnitude); 
+# define and plot the most recent valley
+def valley = low <= Lowest(low[1], magnitude) and low <= Lowest(low[-magnitude], magnitude);
+ 
+# MACD SECTION
+input fastLength = 3;
+input slowLength = 13;
+input MACDLength = 13;
+def Value = MovingAverage(averageType, close, fastLength) - MovingAverage(averageType, close, slowLength);
+def Avg = MovingAverage(averageType, Value, MACDLength);
+def Diff = Value - Avg;
+def ZeroLine = 0;
+ 
+#B% section
+def sDev = StDev(data = price[-displace], length = length);
+def MidLine = MovingAverage(averageType, data = price[-displace], length = length);
+plot LowerBand = MidLine + Num_Dev_Dn * sDev;
+plot UpperBand = MidLine + Num_Dev_up * sDev;
+def PercentB  = ((close - LowerBand) / (UpperBand - LowerBand) * 100) - shifter;
+def extPercentBtop  = if peak is true then PercentB else extPercentBtop[1] ;
+def extPercentBbottom  = if valley is true then PercentB else extPercentBbottom[1];
+def MACDtoplinenodes = if peak is true then Diff else MACDtoplinenodes[1];
+def MACDtopnodefilter =  if MACDtoplinenodes is less than 0 then  MACDtopnodefilter[1] else if MACDtoplinenodes is greater than or equal to 0 then MACDtoplinenodes else MACDtopnodefilter[1];
+def MACDtopline =  if peak is true then MACDtopnodefilter else Double.NaN ;
+def MACDtoplineext = if peak is true then Diff else Double.NaN ;
+def MACDbottomlinenodes = if valley is true then Diff else MACDbottomlinenodes[1];
+def MACDbottomnodefilter =  if MACDbottomlinenodes is greater than 0 then MACDbottomnodefilter[1] else if MACDbottomlinenodes is less than or equal to 0 then MACDbottomlinenodes else MACDbottomnodefilter[1] ;
+def MACDbottomline  = if valley is true then MACDbottomnodefilter else Double.NaN ;
+def MACDbottomlineext = if valley is true then Diff else Double.NaN ;
+ 
+# PRICE AND INDICATOR VALUES IN PARALELL TO SWING HIGH AND LOW NODES ON CHART
+def HIGHswingPRICE = if peak is true then high else HIGHswingPRICE[1];
+def LOWswingPRICE = if valley is true then low else LOWswingPRICE[1];
+def HIGHswingBPCT = if peak is true then PercentB else HIGHswingBPCT[1];
+def LOWswingBPCT = if valley is true then PercentB else LOWswingBPCT[1];
+def HIGHswingMACD = if peak is true then MACDtopnodefilter else MACDtopnodefilter[1];
+def LOWswingMACD = if valley is true then MACDbottomnodefilter else MACDbottomnodefilter[1];
+def extHIGHswingMACD = if peak is true then MACDtoplinenodes else MACDtopnodefilter[1];
+def extLOWswingMACD = if valley is true then MACDbottomlinenodes else MACDbottomnodefilter[1];
+def extHIGHswingBPCT = if peak is true then extPercentBtop else HIGHswingBPCT[1];
+def extLOWswingBPCT = if valley is true then extPercentBbottom else LOWswingBPCT[1];  
+# Variables to Scan for 
+def PRICEnodeHIGH = HIGHswingPRICE;
+def PRICEnodeHIGH1 = HIGHswingPRICE[1] ;
+def PRICEnodeLOW  = LOWswingPRICE;
+def PRICEnodeLOW1  = LOWswingPRICE[1];
+def BPCTtop = HIGHswingBPCT;
+def BPCTtop1 = HIGHswingBPCT[1];
+def BPCTbottom  = LOWswingBPCT;
+def BPCTbottom1 = LOWswingBPCT[1] ;
+def MACDtop =  HIGHswingMACD;
+def MACDtop1 = HIGHswingMACD[1];
+def MACDbottom = LOWswingMACD;
+def MACDbottom1 = LOWswingMACD[1];
+def extLONGsignal = PRICEnodeLOW < PRICEnodeLOW1 and extLOWswingBPCT > extLOWswingBPCT[1] and extLOWswingMACD > extLOWswingMACD[1] ;
+def extSHORTsignal =   PRICEnodeHIGH > PRICEnodeHIGH1 and extHIGHswingBPCT < extHIGHswingBPCT[1] and  extHIGHswingMACD < extHIGHswingMACD[1] ;
+def extLONGsignal1 = PRICEnodeLOW < PRICEnodeLOW1 and BPCTbottom > BPCTbottom[1] and extLOWswingMACD > extLOWswingMACD[1] ;
+def extSHORTsignal1 =   PRICEnodeHIGH > PRICEnodeHIGH1 and BPCTtop < BPCTtop[1] and  extHIGHswingMACD < extHIGHswingMACD[1] ;
+def extLONGsignal2 = PRICEnodeLOW < PRICEnodeLOW1 and extLOWswingBPCT > extLOWswingBPCT[1] and MACDbottom > MACDbottom[1] ;
+def extSHORTsignal2 =   PRICEnodeHIGH > PRICEnodeHIGH1 and extHIGHswingBPCT < extHIGHswingBPCT[1] and  MACDtop < MACDtop[1] ;
+def  SHORTsignal = PRICEnodeHIGH > PRICEnodeHIGH1 and BPCTtop < BPCTtop1 and  MACDtop < MACDtop1 ;
+def LONGsignal = PRICEnodeLOW < PRICEnodeLOW1 and BPCTbottom > BPCTbottom1 and MACDbottom > MACDbottom1 ;
+def REVextLONGsignal = PRICEnodeLOW > PRICEnodeLOW1 and extLOWswingBPCT < extLOWswingBPCT[1] and extLOWswingMACD < extLOWswingMACD[1] ;
+def REVextSHORTsignal =   PRICEnodeHIGH < PRICEnodeHIGH1 and extHIGHswingBPCT > extHIGHswingBPCT[1] and  extHIGHswingMACD > extHIGHswingMACD[1] ;
+def REVextLONGsignal1 = PRICEnodeLOW > PRICEnodeLOW1 and BPCTbottom < BPCTbottom[1] and extLOWswingMACD < extLOWswingMACD[1] ;
+def REVextSHORTsignal1 =   PRICEnodeHIGH < PRICEnodeHIGH1 and BPCTtop > BPCTtop[1] and  extHIGHswingMACD > extHIGHswingMACD[1] ;
+def REVextLONGsignal2 = PRICEnodeLOW > PRICEnodeLOW1 and extLOWswingBPCT < extLOWswingBPCT[1] and MACDbottom < MACDbottom[1] ;
+def REVextSHORTsignal2 =   PRICEnodeHIGH < PRICEnodeHIGH1 and extHIGHswingBPCT > extHIGHswingBPCT[1] and  MACDtop > MACDtop[1] ;
+def REVSHORTsignal = PRICEnodeHIGH < PRICEnodeHIGH1 and BPCTtop > BPCTtop1 and  MACDtop > MACDtop1 ;
+def REVLONGsignal = PRICEnodeLOW > PRICEnodeLOW1 and BPCTbottom < BPCTbottom1 and MACDbottom < MACDbottom1 ;
+ 
+#plot Green = if LONGsignal or extLONGsignal or extLONGsignal1 or extLONGsignal2 is true  then low else Double.NaN ;
+#green.enableApproximation () ;
+#plot red = if SHORTsignal or extSHORTsignal or extSHORTsignal1 or extSHORTsignal2 is true then low  else Double.NaN ;
+########################################################################################################
+# tSL Request for aet
+# example f drawing line between two points
+# Nube 2.20.19
+def h1 = high ;
+def h2 = high[1] ;
+def h3 = high[2] ;
+def h4 = high[3] ;
+def h5 = high[4] ;
+def L1 = low ;
+def L2 = low[1] ;
+def L3 = low[2] ;
+def L4 = low[3] ;
+def L5 = low[4] ;
+def highsago = if h1 >= h2 and h1 >= h3 and h1 >= h4 then 0 else 0 ;
+def highsago1 = if h2 >= h1 and h2 >= h3 and h2 >= h4 then 1 else 0 ;
+def highsago2 = if h3 >= h2 and h3 >= h1 and h3 >= h4 then 2 else 0 ;
+def highsago3 = if h4 >= h2 and h4 >= h3 and h4 >= h1 then 4 else 0 ;
+def highsagonumber = highsago + highsago1 + highsago2 + highsago3 ;
+def lowsago = if L1 <= L2 and L1 <= L3 and L1 <= L4 then 0 else 0 ;
+def lowsago1 = if L2 <= L1 and L2 <= L3 and L2 <= L4 then 1 else 0 ;
+def lowsago2 = if L3 <= L2 and L3 <= L1 and L3 <= L4 then 2 else 0 ;
+def lowsago3 = if L4 <= L2 and L4 <= L3 and L4 <= L1 then 4 else 0 ;
+def lowsagonumber = lowsago + lowsago1 + lowsago2 + lowsago3 ;
+def LIVE_peak_high = GetValue(high, highsagonumber );
+def LIVE_valley_low = GetValue(low, lowsagonumber );
+def hH = GetValue(PercentB, highsagonumber );
+;
+def LL = GetValue(PercentB, lowsagonumber );
+def h =  LIVE_peak_high;
+def L = LIVE_valley_low ;
+def x = BarNumber();
+def xx = BarNumber();
+def nan = Double.NaN;
+def hx = HighestAll( if high == LIVE_peak_high then x else nan) ;
+def Lxx = HighestAll(if low == LIVE_valley_low  then xx else nan);
+def peakX = if peak then x else nan;
+def  PeakToHighBB = if   x == HighestAll(peakX)
+                  then hH 
+                  else if   x == hx
+                       then hH 
+                       else nan;
+def ValleyxX = if valley then xx else nan;
+def  ValleyToLowBB = if   xx == HighestAll(ValleyxX)
+                  then LL 
+                  else if   xx == Lxx
+                       then LL 
+                       else nan;
+def hHmacd = GetValue(Diff, highsagonumber );
+;
+def LLmacd  = GetValue(Diff, lowsagonumber );
+def hmacd =  LIVE_peak_high;
+def Lmacd = LIVE_valley_low ;
+def hxmacd = HighestAll( if high == LIVE_peak_high then x else nan) ;
+def Lxmacd = HighestAll(if low == LIVE_valley_low  then x else nan);
+def peakXmacd = if peak then x else nan;
+def  PeakToHighmacd = if   x == HighestAll(peakX)
+                  then hHmacd 
+                  else if   x == hxmacd
+                       then hHmacd 
+                       else nan;
+def Valleyxmacd = if valley then x else nan;
+def  ValleyToLowmacd = if   x == HighestAll(Valleyxmacd)
+                  then LLmacd  
+                  else if   x == Lxmacd
+                       then LLmacd  
+                       else nan;
+#########################################################################################################
+plot REVextshort = if REVextSHORTsignal or REVextSHORTsignal1 or REVextSHORTsignal2 is true  then low else Double.NaN ;
+def extLONGsignalLIVE = LIVE_valley_low < PRICEnodeLOW  and ValleyToLowBB > extLOWswingBPCT  and ValleyToLowmacd > extLOWswingMACD ;
+def extSHORTsignalLIVE =   LIVE_peak_high  > PRICEnodeHIGH and PeakToHighBB < extHIGHswingBPCT and  PeakToHighmacd < extHIGHswingMACD ;
+ 
+#def extLONGsignalLIVE1 = Live_valley_low< PRICEnodeLOW  and ValleytolowBB > BPCTbottom[1] and valleytolowmacd> extLOWswingMACD ;
+#def extSHORTsignalLIVE1 =   LIVE_peak_high  > PRICEnodeHIGH and BPCTtop < BPCTtop[1] and  peaktohighMACD < extHIGHswingMACD ;
+#def extLONGsignalLIVE2 = Live_valley_low< PRICEnodeLOW  and valleytolowBB > extLOWswingBPCT  and MACDbottom > MACDbottom[1] ;
+#def extSHORTsignalLIVE2 =   LIVE_peak_high  > PRICEnodeHIGH and peaktohighBB < extHIGHswingBPCT and  MACDtop < MACDtop[1] ;
+#def  SHORTsignalLIVE = LIVE_peak_high  > PRICEnodeHIGH and BPCTtop < BPCTtop1 and  MACDtop < MACDtop1 ;
+#def LONGsignalLIVE = Live_valley_low< PRICEnodeLOW  and ValleytolowBB >BPCTbottom and MACDbottom > MACDbottom1 ;
+def REVextLONGsignalLIVE = LIVE_valley_low > PRICEnodeLOW  and ValleyToLowBB < extLOWswingBPCT  and ValleyToLowmacd < extLOWswingMACD ;
+def REVextSHORTsignalLIVE =   LIVE_peak_high  < PRICEnodeHIGH and PeakToHighBB > extHIGHswingBPCT and  PeakToHighmacd > extHIGHswingMACD ;
+#def REVextLONGsignalLIVE1 = Live_valley_low> PRICEnodeLOW  and ValleytolowBB < BPCTbottom[1] and valleytolowmacd< extLOWswingMACD ;
+#def REVextSHORTsignalLIVE1 =   LIVE_peak_high  < PRICEnodeHIGH and BPCTtop > BPCTtop[1] and  peaktohighMACD > extHIGHswingMACD ;
+#def REVextLONGsignalLIVE2 = Live_valley_low> PRICEnodeLOW  and valleytolowBB < extLOWswingBPCT  and MACDbottom < MACDbottom[1] ;
+#def REVextSHORTsignalLIVE2 =   LIVE_peak_high  < PRICEnodeHIGH and peaktohighBB > extHIGHswingBPCT and  MACDtop > MACDtop[1] ;
+#def REVSHORTsignalLIVE = LIVE_peak_high  < PRICEnodeHIGH and BPCTtop > BPCTtop1 and  MACDtop > MACDtop1 ;
+#def REVLONGsignalLIVE = Live_valley_low> PRICEnodeLOW  and ValleytolowBB <BPCTbottom and MACDbottom < MACDbottom1 ;
+##########################################################################################################################
+ 
+ 
+#plot Green = if LONGsignal or extLONGsignal or extLONGsignal1 or extLONGsignal2 is true  then low else Double.NaN ;
+#green.enableApproximation () ;
+#plot red = if SHORTsignal or extSHORTsignal or extSHORTsignal1 or extSHORTsignal2 is true then low  else Double.NaN ;
+########################################################################################################
+# tSL Request for aet
+# example f drawing line between two points
+# Nube 2.20.19
+def LIVE_high_Diff = GetValue(Diff, highsagonumber );
+def LIVE_low_Diff = GetValue(Diff, lowsagonumber );
+def LIVE_high_percentB = GetValue(PercentB, highsagonumber );
+def LIVE_low_percentB = GetValue(PercentB, lowsagonumber );
+def PRICEHIGHSWITCH = if HIGHswingPRICE == LIVE_peak_high then HIGHswingPRICE[1] else HIGHswingPRICE ;
+def PRICElowSWITCH = if LOWswingPRICE == LIVE_valley_low then LOWswingPRICE[1] else LOWswingPRICE ;
+def LIVE_LONGsignal = LIVE_valley_low < PRICElowSWITCH  and LIVE_low_percentB > LOWswingBPCT  and LIVE_low_Diff > LOWswingMACD ;
+def LIVE_SHORTsignal =   LIVE_peak_high  > PRICEHIGHSWITCH and LIVE_high_percentB < HIGHswingBPCT and  LIVE_high_Diff < HIGHswingMACD ;
+def LIVE_LONGsignal2 = LIVE_valley_low < PRICElowSWITCH  and LIVE_low_percentB > LOWswingBPCT  and LIVE_low_Diff > LOWswingMACD ;
+def LIVE_SHORTsignal2 =   LIVE_peak_high  > PRICEHIGHSWITCH and LIVE_high_percentB < HIGHswingBPCT and  LIVE_high_Diff < HIGHswingMACD ;
+#addlabel (1, "live low " + live_valley_low + ", valley " + PRICElowSWITCH +  "live high " + LIVE_peak_high + ", peak " + PRICEHIGHSWITCH ) ; 
+#addlabel (1, "   live B% low " + LIVE_low_percentB + ", B% valley " +  LOWswingBPCT+  "live B% high " + LIVE_high_percentB + ", B% peak " + HIGHswingBPCT ) ; 
+#addlabel (1, "   live MACD low " + LIVE_low_Diff + ", MACD valley " + LOWswingmacd +  "live MACD high " + LIVE_high_Diff + ", MACD peak " + HIGHswingmacd ) ; 
+#########################################################################################################
+def live_bartime = if LIVE_valley_low or LIVE_peak_high is true then x else live_bartime[1];
+def live_bartimex = if LIVE_valley_low or LIVE_peak_high is true then x else live_bartimex[1];
+    #     else Double.NaN ;
+ 
+#red.enableApproximation () ;
+#red.enableApproximation () ;
+ 
+###########################################################################################################################################
+#Usage: 'input data = close' is substituted by an indicator and its parameters.
+ 
+#addlabel ( 1 , "                                                      " , color.current) ;
+script normalizePlot {
+    input data = close;
+    input newRngMin = -100;
+    input newRngMax = 100;
+    def HHData = HighestAll( data );
+    def LLData = LowestAll( data );
+    plot nr = ((( newRngMax - newRngMin ) * ( data - LLData )) / ( HHData - LLData )) + newRngMin;
+}
+input Tlinelength = 8 ;
+input MFILength = 8;
+input MFI_constant = 1.00;
+input OBV_constant = 1.00;
+input DOJI_constant = 1.00;
+input showBreakoutSignals = yes;
+input newRngMax = 100;#Maximum normalized  value
+input newRngMin = -100;#Minimum normalized  value
+def OBV = TotalSum(Sign(close - close[1]) * volume);
+def OBVValue = MovingAverage(averageType, OBV, fastLength) - MovingAverage(averageType, OBV, slowLength);
+def OBVAvg = MovingAverage(averageType, OBVValue, MACDLength);
+def division = (high - low[1]) + (high[1] - low);
+def multiplier;
+if high < low[1] {
+    multiplier = -1;
+} else if low > high[1] {
+    multiplier = 1;
+} else if division == 0 {
+    multiplier = 0;
+} else {
+    multiplier = ((high - low[1]) - (high[1] - low)) / division;
+}
+def MoneyFlowOsc = Sum(multiplier * volume, MFILength) / Sum(volume, MFILength);
+def newMoneyFlowOsc = normalizePlot( MoneyFlowOsc, newRngMin, newRngMax );
+def OBVDiff = OBVValue - OBVAvg;
+def obvnormalised = normalizePlot(  OBVDiff, newRngMin, newRngMax );
+def newDiff = normalizePlot(Diff, newRngMin, newRngMax );
+# ABES OBV+MFI+MACD ###
+def ABES2 = (newDiff * DOJI_constant) + (newMoneyFlowOsc * MFI_constant) + (obvnormalised * OBV_constant) ;
+ 
+  ##### ABES OFFICIAL###
+def ABES1 = (newDiff * DOJI_constant) + (newMoneyFlowOsc * MFI_constant);
+plot tline =  MovingAverage(averageType, close, Tlinelength);
+def upmacdMACD = newDiff[1] < newDiff ;
+def upMACDabe = (newDiff[1] <= newDiff) and (ABES1[1] >= ABES1) and (ABES2[1] >= ABES2) ;
+def upABEmacd = (newDiff[1] >= newDiff) and (ABES1[1] <= ABES1) and (ABES2[1] <= ABES2) ;
+def uphalf = (newDiff[1] >= newDiff) and ( 
+(ABES1[1] >= ABES1) and (ABES2[1] <= ABES2) or
+(ABES1[1] <= ABES1) and (ABES2[1] >= ABES2)  ) ;
+def downmacdMACD = newDiff[1] > newDiff ;
+def downMACDabe = (newDiff[1] >= newDiff) and (ABES1[1] <= ABES1) and (ABES2[1] <= ABES2) ;
+def downABEmacd = (newDiff[1] <= newDiff) and (ABES1[1] >= ABES1) and (ABES2[1] >= ABES2) ;
+def downhalf = (newDiff[1] <= newDiff) and ( 
+(ABES1[1] >= ABES1) and (ABES2[1] <= ABES2) or
+(ABES1[1] <= ABES1) and (ABES2[1] >= ABES2)  ) ;
+def pressureup =  close[1] > close and ((newDiff[1] <= newDiff) and (ABES1[1] <= ABES1) and (ABES2[1] <= ABES2) ) ;
+def pressuredown =  close[1] < close and ((newDiff[1] >= newDiff) and (ABES1[1] >= ABES1) and (ABES2[1] >= ABES2) ) ;
+def abesincreasing = (ABES1[1] <= ABES1) and (ABES2[1] <= ABES2) ;
+def abesdecresing = (ABES1[1] >= ABES1) and (ABES2[1] >= ABES2) ;
+def short1 = open > tline or  close > tline;
+def long1 = open < tline or  close < tline;
+AddChartBubble(abesincreasing and upMACDabe , high, "M+a" , Color.LIME, yes);
+AddChartBubble(abesincreasing and upABEmacd , high, "m+A" , Color.LIME, yes);
+#AddChartBubble(upmacdMACD , high, "mM" , Color.LIGHT_GRAY, yes);
+AddChartBubble(abesincreasing and pressureup, high, "p" , Color.LIME, yes) ;
+AddChartBubble(abesdecresing and downMACDabe , low,  "M+a" , Color.MAGENTA, no  );
+AddChartBubble(abesdecresing and downABEmacd , low, "m+A", Color.MAGENTA, no);
+#AddChartBubble(downmacdMACD , low,  "mM" , Color.LIGHT_GRAY, no ); 
+AddChartBubble(abesdecresing and pressuredown , low, "p" , Color.MAGENTA, no) ;
+AddChartBubble(long1 and (downhalf or uphalf) , high, "h" , Color.VIOLET, yes );
+AddChartBubble(short1 and (uphalf or downhalf) , low, "h" , Color.VIOLET, no) ;
+input magnitude1 = 1;
+#LIVENODE BARLOCATOR
+ 
+# define and plot the most recent peak
+def peak1 = high >= Highest(high[1], magnitude1) and high >= Highest(high[-magnitude1], magnitude1); 
+# define and plot the most recent valley
+def valley1 = low <= Lowest(low[1], magnitude1) and low <= Lowest(low[-magnitude1], magnitude1);
+def peakX1 = if peak1 then x else nan;
+def ValleyxX1 = if valley1 then x else nan;
+def rpeakX1 = if peak1 is true then x else rpeakX1[1];
+def rValleyxX1 = if valley1 is true then x else rValleyxX1[1];
+def rankh1 =   if rpeakX1 <= x then
+if (h1 > h2 and h1 > h3 and h1 > h4) then 1
+else if (  h1 < h2 ) then 0 
+else if (((h1 > h2) and (h1 > h3)) or (h1 > h3 and h1 > h4)) then 2 
+else if ( h1 > h2 or h1 > h3 or h1 > h4 ) then 2
+else 0 else 0 ;
+def rankH2 = if rpeakX1 < x[1]  then  
+if (h2 > h1 and h2 > h3 and h2 > h4) then 1
+else if  ((h2 > h1 and h2 > h3) or (h2 > h3 and h2 > h4)) then 2
+else if ((h2 > h3) or ( h2 > h4)) then 2  
+else 0  else 0 ;
+def rankH3 = if rpeakX1 < x[2] then  
+if (h3 > h1 and h3 > h2 and h3 > h4) then 1
+else if ((h3 > h1 and h3 > h2) or (h3 > h2 and h3 > h4)) then 2
+else if h3 > (  ( h4)) then 2  
+else 0  else 0 ;
+def rankH4 = if rpeakX1 < x[3] then 
+if (h4 > h2 and h4 > h3 and h4 > h1) then 1
+else if  ((h4 > h1 and h4 > h2) or (h4 > h2 and h4 > h3) ) then 2
+else 2 else 0 ;
+def rankL1 =   if rValleyxX1 <= x then
+if (L1 < L2 and L1 < L3 and L1 < L4) then 1
+else if (  L1 > L2 ) then 0 
+else if (((L1 < L2) and (L1 < L3)) or (L1 < L3 and L1 < L4)) then 2 
+else if ( L1 < L2 or L1 < L3 or L1 < L4 ) then 2
+else 0 else 0 ;
+def rankL2 = if rValleyxX1 < x[1]  then  
+if (L2 < L1 and L2 < L3 and L2 < L4) then 1
+else if  ((L2 < L1 and L2 < L3) or (L2 < L3 and L2 < L4)) then 2
+else if ((L2 < L3) or ( L2 < L4)) then 2  
+else 0  else 0 ;
+def rankL3 = if rValleyxX1 < x[2] then  
+if (L3 < L1 and L3 < L2 and L3 < L4) then 1
+else if ((L3 < L1 and L3 < L2) or (L3 < L2 and L3 < L4)) then 2
+else if L3 < (  ( L4)) then 2  
+else 0  else 0 ;
+def rankL4 = if rValleyxX1 < x[3] then 
+if (L4 < L2 and L4 < L3 and L4 < L1) then 1
+else if  ((L4 < L1 and L4 < L2) or (L4 < L2 and L4 < L3) ) then 2
+else 2 else 0 ;
+def secondaryLselector = 
+if  rankL1 == 2 then L1 else
+if  rankL2 == 2 then L2 else
+if  rankL3 == 2 then L3 else
+if  rankL4 == 2 then L4 else Double.NaN ;
+def secondaryHselector = 
+if  rankh1 == 2 then h1 else
+if  rankH2 == 2 then h2 else
+if  rankH3 == 2 then h3 else
+if  rankH4 == 2 then h4 else Double.NaN ;
+def rLLx =
+if  rankL1 == 2 then x else
+if  rankL2 == 2 then x else
+if  rankL3 == 2 then x else
+if  rankL4 == 2 then x else rLLx[1] ;
+def rHHx = 
+if  rankh1 == 2 then x else
+if  rankH2 == 2 then x else
+if  rankH3 == 2 then x else
+if  rankH4 == 2 then x else rHHx[1] ;
+ 
+#addlabel (1, rpeakx + " " + x + " " + rvalleyxx ) ;
+#addlabel (1, rankh1 + " " + rankh2 + " " + rankh3 + " " + rankh4  ) ;
+#addlabel (1, h1 + " " + h2 + " " + h3 + " " + h4  ) ;
+#addlabel (1, secondaryhselector ) ;
+#addlabel (1, rankL1 + " " + rankL2 + " " + rankL3 + " " + rankL4  ) ;
+#addlabel (1, L1 + " " + L2 + " " + L3 + " " + L4  ) ;
+#addlabel (1, secondaryLselector ) ;
+#addlabel (1, live_valley_low ) ;
+#plot barnumner = x ;
+#barnumner.setpaintingstrategy(PaintingStrategy.VALUES_above ) ;
+ 
+#PEAK AND VALLEY PRICES
+def toplinenodes1 = if peak1 is true then high else toplinenodes1[1];
+def peak_high1 =  if peak1 is true then toplinenodes1 else Double.NaN ;
+def bottomlinenodes1 = if valley1 is true then low else bottomlinenodes1[1];
+def valley_low1  = if valley1 is true then bottomlinenodes1 else Double.NaN ;
+  
+# addlabel (1, bottomlinenodes ) ;
+
+ 
+#PEAK3 AND VALLEY3 PRICES
+def toplinenodes = if peak is true then high else toplinenodes[1];
+def peak_high =  if peak is true then toplinenodes else Double.NaN ;
+def bottomlinenodes = if valley is true then low else bottomlinenodes[1];
+def valley_low  = if valley is true then bottomlinenodes else Double.NaN ;
+
+
+
+
+ 
+ 
+#LIVE NODES
+def LIVE_PercentBtop  =   GetValue(PercentB,  highsagonumber );
+def LIVE_PercentBbottom  = GetValue(PercentB,  lowsagonumber );
+def MACDtoplinenodes1 = if peak1 is true then Diff else MACDtoplinenodes1[1];
+def MACDtopnodefilter1 =  if MACDtoplinenodes1 is less than 0 then  MACDtopnodefilter1[1] else if MACDtoplinenodes1 is greater than or equal to 0 then MACDtoplinenodes1  else MACDtopnodefilter1[1];
+def MACD_topline1 =  if peak1 is true then MACDtopnodefilter1 else Double.NaN ;
+def MACD_topline_LIVE = GetValue(Diff, highsagonumber );
+def MACDbottomlinenodes1 = if valley1 is true then Diff else MACDbottomlinenodes1[1];
+def MACDbottomnodefilter1 =  if MACDbottomlinenodes1 is greater than 0 then MACDbottomnodefilter1[1] else if MACDbottomlinenodes1 is less than or equal to 0 then MACDbottomlinenodes1 else MACDbottomnodefilter1[1] ;
+def MACD_bottomline1  = if valley1 is true then MACDbottomnodefilter1 else Double.NaN ;
+def MACD_bottomline_LIVE = GetValue(Diff, lowsagonumber ); 
+# PRICE AND INDICATOR VALUES IN PARALELL TO SWING HIGH AND LOW NODES ON CHART
+def HIGHswingPRICE1 = if peak1 is true then high else HIGHswingPRICE1[1];
+def LOWswingPRICE1 = if valley1 is true then low else LOWswingPRICE1[1];
+def HIGHswingBPCT1 = if peak1 is true then PercentB else HIGHswingBPCT1[1];
+def LOWswingBPCT1 = if valley1 is true then PercentB else LOWswingBPCT1[1];
+def HIGHswingMACD1 = if peak1 is true then MACDtopnodefilter1 else MACDtopnodefilter1[1];
+def LOWswingMACD1 = if valley1 is true then MACDbottomnodefilter1 else MACDbottomnodefilter1[1];
+def extHIGHswingMACD1 = if peak1 is true then MACDtoplinenodes1 else MACDtopnodefilter1[1];
+def extLOWswingMACD1 = if valley1 is true then MACDbottomlinenodes1 else MACDbottomnodefilter1[1];
+def extHIGHswingBPCT1 = if peak1 is true then  LIVE_PercentBtop  else HIGHswingBPCT1[1];
+def extLOWswingBPCT1 = if valley1 is true then  LIVE_PercentBbottom  else LOWswingBPCT1[1];  
+# Variables to Scan for
+def PRICEnodeHIGH_1 = HIGHswingPRICE1;
+def PRICEnodeHIGH1_1 = HIGHswingPRICE1[1] ;
+def PRICEnodeLOW_1  = LOWswingPRICE1;
+def PRICEnodeLOW1_1  = LOWswingPRICE1[1];
+def BPCTtop_1 = HIGHswingBPCT1;
+def BPCTtop1_1 = HIGHswingBPCT1[1];
+def BPCTbottom_1  = LOWswingBPCT1;
+def BPCTbottom1_1 = LOWswingBPCT1[1] ;
+def MACDtop_1 =  HIGHswingMACD1;
+def MACDtop1_1 = HIGHswingMACD1[1];
+def MACDbottom_1 = LOWswingMACD1;
+def MACDbottom1_1 = LOWswingMACD1[1];
+def LIVE_LONG_signal_1 = LIVE_valley_low < PRICEnodeLOW_1  and LIVE_PercentBbottom > BPCTbottom_1  and  MACD_bottomline_LIVE > MACDbottom_1 ;
+def LIVE_SHORT_signal_1 =   LIVE_peak_high > PRICEnodeHIGH_1  and LIVE_PercentBtop < BPCTtop_1 and  MACD_topline_LIVE < MACDtop_1 ;
+def extLONGsignal1_1 = PRICEnodeLOW_1 < PRICEnodeLOW1_1 and BPCTbottom_1 > BPCTbottom_1[1] and extLOWswingMACD1 > extLOWswingMACD1[1] ;
+def extSHORTsignal1_1 =   PRICEnodeHIGH_1 > PRICEnodeHIGH1_1 and BPCTtop_1 < BPCTtop_1[1] and  extHIGHswingMACD1 < extHIGHswingMACD1[1] ;
+def extLONGsignal2_1 = PRICEnodeLOW_1 < PRICEnodeLOW1_1 and extLOWswingBPCT1 > extLOWswingBPCT1[1] and MACDbottom_1 > MACDbottom_1[1] ;
+def extSHORTsignal2_1 =   PRICEnodeHIGH_1 > PRICEnodeHIGH1_1 and extHIGHswingBPCT1 < extHIGHswingBPCT1[1] and  MACDtop_1 < MACDtop_1[1] ;
+def  SHORTsignal_1 = PRICEnodeHIGH_1 > PRICEnodeHIGH1_1 and BPCTtop_1 < BPCTtop1_1 and  MACDtop_1 < MACDtop1_1 ;
+def LONGsignal_1 = PRICEnodeLOW_1 < PRICEnodeLOW1_1 and BPCTbottom_1 > BPCTbottom1_1 and MACDbottom_1 > MACDbottom1_1 ;
+def LONGsignalREV_1 = PRICEnodeHIGH_1 < PRICEnodeHIGH1_1 and BPCTtop_1 > BPCTtop1_1 and  MACDtop_1 > MACDtop1_1 ;
+def SHORTsignalREV_1 = PRICEnodeLOW_1 < PRICEnodeLOW1_1 and BPCTbottom_1 < BPCTbottom1_1 and MACDbottom_1 < MACDbottom1_1 ;
+ 
+#plot Green = if LONGsignal or extLONGsignal or extLONGsignal1 or extLONGsignal2 is true  then low else Double.NaN ;
+#green.enableApproximation () ;
+#plot red = if SHORTsignal or extSHORTsignal or extSHORTsignal1 or extSHORTsignal2 is true then low  else Double.NaN ;
+def LONG_1 = if LONGsignal_1 is true  then low else Double.NaN ;
+#green.enableApproximation () ;
+def SHORT_1 = if SHORTsignal_1   is true then low  else Double.NaN ;
+#red.enableApproximation () ;
+#red.enableApproximation () ;
+ 
+ #####
+# tSL Request for aet
+# example f drawing line between two points
+# Nube 2.20.19
+def hh_1 =  if LIVE_peak_high == toplinenodes1 then secondaryHselector else LIVE_peak_high;
+def Ll_1 =  if LIVE_valley_low  == bottomlinenodes1 then secondaryLselector else LIVE_valley_low;
+def hhx = HighestAll( if high >= hh_1 then x else nan) ;
+def Lx = HighestAll(if low == L  then x else nan);
+def Llx = HighestAll(if low == Ll_1  then x else nan);
+
+
+
+
+def PeakToHigh = if   x == HighestAll(peakX)
+                  then high 
+                  else if   x == hx
+                       then high     #h
+                       else nan;
+
+
+def ValleyToLow = if   x == HighestAll(ValleyxX)
+                  then low 
+                  else if   x == Lx
+                       then low    #l
+                       else nan;
+
+def PeakToHigh_1 = if   x == HighestAll(peakX1)
+                  then high 
+                  else if   x == HighestAll(rHHx)   and high > high[1]  and x >= hx  #instead of x == Hx
+                       then high                        # h
+                     #  else if   x == highestAll(rhhx)  #instead of x == LLx
+                     #  then hh
+                       else  nan;
+
+def ValleyToLow_1 = if   x == HighestAll(ValleyxX1)
+                  then low 
+                 else if   x == HighestAll(rLLx)   and low < low[1] and x >= Lx   #instead of x == Lx
+                       then  low                    #l
+                     # else if   x == highestAll(rllx)   #instead of x == LLx
+                     #  then ll
+                       else  nan;
+
+plot Peaktohigh1_1 = if   x == HighestAll(peakX1)
+                  then high 
+                  else if   x == hx   and high > high[1]
+                       then h 
+                       else nan;
+Peaktohigh1_1.SetDefaultColor(Color.RED);
+Peaktohigh1_1.EnableApproximation();
+def Valleytolow1_1 = if   x == HighestAll(ValleyxX1)
+                  then low 
+                  else if   x == Lx 
+                       then L
+                       else nan;
+
+
+
+
+
+
+
+ 
+# addlabel ( 1 , bottomlinenodes ) ;
+#plot lowx = highestAll(valleyxX)  ;
+#lowx.setpaintingstrategy(PaintingStrategy.VALUES_BELOW ) ;
+#addlabel ( 1, lx + " " + llx , color.yellow);
+#####
+# tSL Request for aet
+# example f drawing line between two points
+# Nube 2.20.19
+#livetop.SetDefaultColor( Color.CYAN );
+#livetop.EnableApproximation ( ) ;
+#livetop.SetLineWeight(1);
+#livebottom.EnableApproximation ( ) ;
+#livebottom.SetDefaultColor( Color.CYAN);
+#livebottom.SetLineWeight(1);
+
+
+
+
+
+
+
+
+
+def switchingprice = if IsNaN(close[-1]) then if high[1] >= high then high[1] else high
+                                        else close ;
+def switching_exp_ma = ExpAverage(switchingprice, 8);
+def PRE_T_STOP_TRIGGER = (low < switching_exp_ma) and (close[1] > tline[1]) ;
+def TD_stop =  if ( (high == peak_high1) or (high == PeakToHigh_1)  or (high == Peaktohigh1_1)) then high else TD_stop[1];
+def BU_stop =  if   (low == valley_low)  then low else BU_stop[1];
+plot TD_STOP_Values =  if ( (high == peak_high1) or (high == PeakToHigh_1)  or (high == Peaktohigh1_1)) then TD_stop else Double.NaN;
+TD_STOP_Values.SetPaintingStrategy(PaintingStrategy.VALUES_ABOVE);
+TD_STOP_Values.SetDefaultColor(Color.RED);
+plot TD_STOP_Lines =  if ( (high == peak_high1) or (high == PeakToHigh_1)  or (high == Peaktohigh1_1)) then TD_stop else Double.NaN;
+TD_STOP_Lines.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+TD_STOP_Lines.SetDefaultColor(Color.RED);
+plot BU_STOP_Values =  if valley_low then low else Double.NaN ;
+#( 
+#(low == valley_low)
+# or (low == valleytolow)  or (low == valley_low1)) 
+#then BU_stop else double.nan;  
+BU_STOP_Values.SetPaintingStrategy(PaintingStrategy.VALUES_BELOW);
+BU_STOP_Values.SetDefaultColor(Color.YELLOW);
+def def_BU_stoplines =     if valley_low is true then low else def_BU_stoplines[1] ;
+plot BU_STOP_Lines =  def_BU_stoplines ;
+BU_STOP_Lines.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+BU_STOP_Lines.SetDefaultColor(Color.YELLOW);
+plot Tline_H = if IsNaN(close[-2]) then switching_exp_ma else Double.NaN ;
+
+
+plot PEAK_HIGH_PLOT = peak_high;
+plot VALLEY_LOW_PLOT = valley_low;
+
+
+plot PEAK_HIGH1_PLOT = peak_high1;
+plot VALLEY_LOW1_PLOT = valley_low1;
+
+PEAK_HIGH_PLOT.SetDefaultColor( Color.RED );
+PEAK_HIGH_PLOT.EnableApproximation ( ) ;
+PEAK_HIGH_PLOT.SetLineWeight(3);
+VALLEY_LOW_PLOT.EnableApproximation ( ) ;
+VALLEY_LOW_PLOT.SetDefaultColor( Color.GREEN);
+VALLEY_LOW_PLOT.SetLineWeight(3);
+
+
+PEAK_HIGH1_PLOT.SetDefaultColor( Color.RED );
+PEAK_HIGH1_PLOT.EnableApproximation ( ) ;
+PEAK_HIGH1_PLOT.SetLineWeight(3);
+VALLEY_LOW1_PLOT.EnableApproximation ( ) ;
+VALLEY_LOW1_PLOT.SetDefaultColor( Color.GREEN);
+VALLEY_LOW1_PLOT.SetLineWeight(3);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+plot  PEAKToHigh_PLOT = PeakToHigh ;
+
+plot  VALLEYToLow_PLOT = ValleyToLow ;
+
+plot  PEAKToHigh_1_PLOT = PeakToHigh_1 ;
+
+plot  VALLEYToLow_1_PLOT =  ValleyToLow_1 ;
+
+plot  VALLEYtolow1_1_PLOT =  Valleytolow1_1 ;
+
+
+
+PEAKToHigh_PLOT.SetDefaultColor(Color.RED);
+PEAKToHigh_PLOT.EnableApproximation();
+VALLEYToLow_PLOT.SetDefaultColor(Color.GREEN);
+VALLEYToLow_PLOT.EnableApproximation();
+PEAKToHigh_1_PLOT.SetDefaultColor(Color.RED);
+PEAKToHigh_1_PLOT.EnableApproximation();
+VALLEYToLow_1_PLOT.SetDefaultColor(Color.GREEN);
+VALLEYToLow_1_PLOT.EnableApproximation();
+VALLEYtolow1_1_PLOT.SetDefaultColor(Color.GREEN);
+VALLEYtolow1_1_PLOT.EnableApproximation();
+
+
+
+
+
+
+
+
+input tradesizecap = 1.00 ;   # in multiples of netliq#
+input Blength = 8 ;    #length of bollinger bands"
+input rationalizer = 0.00;   #in percentages on the graph as a minimum "Max stop" short or long#
+ 
+ 
+ 
+ #AddLabel(1, "R:R " + peak , Color.MAGENTA);
+ 
+#addLabel(1, "R:R " + valley , Color.MAGENTA);
+def upday = open is greater than close ;
+def downday = open is less than close ;
+def doji = open is equal to close ;
+def upup = upday and upday [1] ;
+def downdown = downday and downday [1] ;
+def updown = upday and downday [1] ;
+def downup = downday and upday [1] ;
+def dojidoji = doji and doji [1] ;
+def updoji = upday and doji [1] ;
+def downdoji = downday and doji [1] ;
+def dojiup = doji and upday [1] ;
+def dojidown = doji and downday [1] ;
+#high and low selectors#
+def shortriskstop =  if LIVE_peak_high > toplinenodes then LIVE_peak_high else toplinenodes  ;
+def longriskstop =  if LIVE_valley_low <  bottomlinenodes then LIVE_valley_low else bottomlinenodes  ;
+def shortrisksize = ( shortriskstop - close )  ;
+def longrisksize =   (close  - longriskstop )  ;
+def shortdip = shortrisksize / close  ;
+def longdip =   longrisksize / close  ;
+def NetLiq = if IsNaN(GetNetLiq())
+             then NetLiq[1]
+             else GetNetLiq() ;
+def NetLiqcapped = NetLiq * tradesizecap ;
+def longstopprice =  longriskstop  ;
+def LONGposition1pct = Round ( NetLiq / close / longdip * .01  , 0 ) ;
+def LONGposition2pct = Round ( NetLiq / close / longdip * .02  , 0 ) ;
+def LONGpositionQpct = Round ( NetLiq / close / longdip * .0025  , 0 ) ;
+def shortstopprice =  shortriskstop  ;
+def SHORTposition1pct = Round ( NetLiq / close / shortdip * .01  , 0 ) ;
+def SHORTposition2pct = Round ( NetLiq / close / shortdip * .02  , 0 ) ;
+def SHORTpositionQpct = Round ( NetLiq / close / shortdip * .0025  , 0 ) ;
+def MAXSIZE = Round ( NetLiqcapped / close  , 0 ) ;
+ 
+  
+#risk reward to Tline# 
+def shortrewardsizeT =   close - tline  ;
+def shortriskrewardratioT = Round ( shortrewardsizeT / shortrisksize , 2 );
+def bottomlinenodess = if valley is true then low else bottomlinenodes[1];
+AddLabel(1, "Stop @ " + longstopprice + " $" , Color.LIGHT_GRAY);
+AddLabel(1, "", Color.CURRENT);
+AddLabel(1, (if LONGposition1pct is less than or equal to MAXSIZE then ("1% = " + LONGposition1pct ) else  ("1% = (" + MAXSIZE) + ")"  )  , Color.GREEN );
+AddLabel(1, "    ", Color.CURRENT);
+AddLabel(1, "(" + MAXSIZE + ")" , Color.ORANGE );
+AddLabel(1, "    ", Color.CURRENT);
+AddLabel(1, (if SHORTposition1pct is less than or equal to MAXSIZE then ("1% = " + SHORTposition1pct ) else  ("1% = (" + MAXSIZE) + ")"  )  , Color.RED );
+#AddLabel(1, (if SHORTposition2pct is less than or equal to MAXSIZE then ("2% = " + SHORTposition2pct ) else  ("2% = (" + MAXSIZE) + ")"  )  , Color.RED );
+#AddLabel(1, (if SHORTpositionQpct is less than or equal to MAXSIZE then (".25% = " + SHORTpositionQpct ) else  (".25% = (" + MAXSIZE) + ")"  )  ,  Color.VIOLET );
+AddLabel(1, "", Color.CURRENT);
+AddLabel(1, "Stop @ " + shortstopprice + " $" , Color.LIGHT_GRAY);
+input factor = 1.5;
+input Length_K = 21;
+def shift = factor * MovingAverage(averageType, TrueRange(high, close, low), Length_K);
+def average = MovingAverage(averageType, price, Length_K);
+#plot Avg = average[-displace];
+plot Upper_Band = average[-displace] + shift[-displace];
+Upper_Band.SetDefaultColor(GetColor(8));
+plot Lower_Band = average[-displace] - shift[-displace];
+Lower_Band.SetDefaultColor(GetColor(5));
+def squeeze = (BollingerBands("length" = 8, "average type" = "EXPONENTIAL")."UpperBand" is less than or equal to Upper_Band) and (BollingerBands("length" = 8, "average type" = "EXPONENTIAL")."LowerBand" is greater than or equal to Lower_Band) ;
+AssignPriceColor(if squeeze is true then Color.LIGHT_GRAY else Color.CURRENT);
+ 
+############################################################################## STOPS AND EXIT STUDIES #############################################
+input  tlength = 8 ;
+ 
+ #trigger edited 
+def trigger =        (  
+                       ( (open > tline[1])  and (tline > close) )
+                    or ( (close[1] > tline[1])  and (tline > close) ) 
+                    or ( (open > tline)  and (tline > close) )
+                      ) ;   
+#AddChartBubble(   ( (open > tline) and (tline > close) ), high, "TRIGGER" , Color.green, yes);
+ 
+ ##################   _1 WORKS WITH USFD
+script extractDIFF {
+    input fastLength = 3;
+    input slowLength = 5;
+    input MACDLength = 5;
+    input averageType = AverageType.EXPONENTIAL;
+    input showBreakoutSignals = yes;
+    def Value = MovingAverage(averageType, close, fastLength) - MovingAverage(averageType, close, slowLength);
+    def Avg = MovingAverage(averageType, Value, MACDLength);
+    plot  Diff = Value - Avg;
+}
+def diff_1 = extractDIFF ( 3, 5, 5) ;
+def diff_2 = extractDIFF ( 3, 8, 8) ;
+def diff_3 = extractDIFF ( 5, 8, 8) ;
+def diff_4 = extractDIFF ( 3, 13, 13) ;
+def diff_5 = extractDIFF ( 5, 13, 13) ;
+def diff_6 = extractDIFF ( 8, 13, 13) ;
+def diff_7 = extractDIFF ( 3, 21, 21) ;
+def diff_8 = extractDIFF ( 5, 21, 21) ;
+def diff_9 = extractDIFF ( 8, 21, 21) ;
+def diff_10 = extractDIFF ( 13, 21, 21) ;
+def diff_11 = extractDIFF ( 3, 34, 34) ;
+def diff_12 = extractDIFF ( 5, 34, 34) ;
+def diff_13 = extractDIFF ( 8, 34, 34) ;
+def diff_14 = extractDIFF ( 13, 34, 34) ;
+def diff_15 = extractDIFF ( 21, 34, 34) ;
+def diff_16 = extractDIFF ( 3, 55, 55) ;
+def diff_17 = extractDIFF ( 5, 55, 55) ;
+def diff_18 = extractDIFF ( 8, 55, 55) ;
+def diff_19 = extractDIFF ( 13, 55, 55) ;
+def diff_20 = extractDIFF ( 21, 55, 55) ;
+def diff_21 = extractDIFF ( 34, 55, 55) ;
+def diff_22 = extractDIFF ( 3, 89, 89) ;
+def diff_23 = extractDIFF ( 5, 89, 89) ;
+def diff_24 = extractDIFF ( 8, 89, 89) ;
+def diff_25 = extractDIFF ( 13, 89, 89) ;
+def diff_26 = extractDIFF ( 21, 89, 89) ;
+def diff_27 = extractDIFF ( 34, 89, 89) ;
+def diff_28 = extractDIFF ( 55, 89, 89) ;
+ 
+#######################
+def diff_1_positive  = diff_1 > 0 ;
+def diff_1_negative  = diff_1 < 0 ;
+def diff_2_positive  = diff_2 > 0 ;
+def diff_2_negative  = diff_2 < 0 ;
+def diff_3_positive  = diff_3 > 0 ;
+def diff_3_negative  = diff_3 < 0 ;
+def diff_4_positive  = diff_4 > 0 ;
+def diff_4_negative  = diff_4 < 0 ;
+def diff_5_positive  = diff_5 > 0 ;
+def diff_5_negative  = diff_5 < 0 ;
+def diff_6_positive  = diff_6 > 0 ;
+def diff_6_negative  = diff_6 < 0 ;
+def diff_7_positive  = diff_7 > 0 ;
+def diff_7_negative  = diff_7 < 0 ;
+def diff_8_positive  = diff_8 > 0 ;
+def diff_8_negative  = diff_8 < 0 ;
+def diff_9_positive  = diff_9 > 0 ;
+def diff_9_negative  = diff_9 < 0 ;
+def diff_10_positive  = diff_10 > 0 ;
+def diff_10_negative  = diff_10 < 0 ;
+def diff_11_positive  = diff_11 > 0 ;
+def diff_11_negative  = diff_11 < 0 ;
+def diff_12_positive  = diff_12 > 0 ;
+def diff_12_negative  = diff_12 < 0 ;
+def diff_13_positive  = diff_13 > 0 ;
+def diff_13_negative  = diff_13 < 0 ;
+def diff_14_positive  = diff_14 > 0 ;
+def diff_14_negative  = diff_14 < 0 ;
+def diff_15_positive  = diff_15 > 0 ;
+def diff_15_negative  = diff_15 < 0 ;
+def diff_16_positive  = diff_16 > 0 ;
+def diff_16_negative  = diff_16 < 0 ;
+def diff_17_positive  = diff_17 > 0 ;
+def diff_17_negative  = diff_17 < 0 ;
+def diff_18_positive  = diff_18 > 0 ;
+def diff_18_negative  = diff_18 < 0 ;
+def diff_19_positive  = diff_19 > 0 ;
+def diff_19_negative  = diff_19 < 0 ;
+def diff_20_positive  = diff_20 > 0 ;
+def diff_20_negative  = diff_20 < 0 ;
+def diff_21_positive  = diff_21 > 0 ;
+def diff_21_negative  = diff_21 < 0 ;
+def diff_22_positive  = diff_22 > 0 ;
+def diff_22_negative  = diff_22 < 0 ;
+def diff_23_positive  = diff_23 > 0 ;
+def diff_23_negative  = diff_23 < 0 ;
+def diff_24_positive  = diff_24 > 0 ;
+def diff_24_negative  = diff_24 < 0 ;
+def diff_25_positive  = diff_25 > 0 ;
+def diff_25_negative  = diff_25 < 0 ;
+def diff_26_positive  = diff_26 > 0 ;
+def diff_26_negative  = diff_26 < 0 ;
+def diff_27_positive  = diff_27 > 0 ;
+def diff_27_negative  = diff_27 < 0 ;
+def diff_28_positive  = diff_28 > 0 ;
+def diff_28_negative  = diff_28 < 0 ;
+def step_up_1   =  (diff_1 [1]  > diff_1   [2])  ;
+def step_up_2   =  (diff_2 [1]  > diff_2   [2])  ;
+def step_up_3   =  (diff_3 [1]  > diff_3   [2])  ;
+def step_up_4   =  (diff_4 [1]  > diff_4   [2])  ;
+def step_up_5   =  (diff_5 [1]  > diff_5   [2])  ;
+def step_up_6   =  (diff_6 [1]  > diff_6   [2])  ;
+def step_up_7   =  (diff_7 [1]  > diff_7   [2])  ;
+def step_up_8   =  (diff_8 [1]  > diff_8   [2])  ;
+def step_up_9   =  (diff_9 [1]  > diff_9   [2])  ;
+def step_up_10   =  (diff_10 [1]  > diff_10   [2])  ;
+def step_up_11   =  (diff_11 [1]  > diff_11   [2])  ;
+def step_up_12   =  (diff_12 [1]  > diff_12   [2])  ;
+def step_up_13   =  (diff_13 [1]  > diff_13   [2])  ;
+def step_up_14   =  (diff_14 [1]  > diff_14   [2])  ;
+def step_up_15   =  (diff_15 [1]  > diff_15   [2])  ;
+def step_up_16   =  (diff_16 [1]  > diff_16   [2])  ;
+def step_up_17   =  (diff_17 [1]  > diff_17   [2])  ;
+def step_up_18   =  (diff_18 [1]  > diff_18   [2])  ;
+def step_up_19   =  (diff_19 [1]  > diff_19   [2])  ;
+def step_up_20   =  (diff_20 [1]  > diff_20   [2])  ;
+def step_up_21   =  (diff_21 [1]  > diff_21   [2])  ;
+def step_up_22   =  (diff_22 [1]  > diff_22   [2])  ;
+def step_up_23   =  (diff_23 [1]  > diff_23   [2])  ;
+def step_up_24   =  (diff_24 [1]  > diff_24   [2])  ;
+def step_up_25   =  (diff_25 [1]  > diff_25   [2])  ;
+def step_up_26   =  (diff_26 [1]  > diff_26   [2])  ;
+def step_up_27   =  (diff_27 [1]  > diff_27   [2])  ;
+def step_up_28   =  (diff_28 [1]  > diff_28   [2])  ;
+def W_W_1    = (diff_1   > diff_1    [1])    ;
+def W_W_2    = (diff_2   > diff_2    [1])    ;
+def W_W_3    = (diff_3   > diff_3    [1])    ;
+def W_W_4    = (diff_4   > diff_4    [1])    ;
+def W_W_5    = (diff_5   > diff_5    [1])    ;
+def W_W_6    = (diff_6   > diff_6    [1])    ;
+def W_W_7    = (diff_7   > diff_7    [1])    ;
+def W_W_8    = (diff_8   > diff_8    [1])    ;
+def W_W_9    = (diff_9   > diff_9    [1])    ;
+def W_W_10    = (diff_10   > diff_10    [1])    ;
+def W_W_11    = (diff_11   > diff_11    [1])    ;
+def W_W_12    = (diff_12   > diff_12    [1])    ;
+def W_W_13    = (diff_13   > diff_13    [1])    ;
+def W_W_14    = (diff_14   > diff_14    [1])    ;
+def W_W_15    = (diff_15   > diff_15    [1])    ;
+def W_W_16    = (diff_16   > diff_16    [1])    ;
+def W_W_17    = (diff_17   > diff_17    [1])    ;
+def W_W_18    = (diff_18   > diff_18    [1])    ;
+def W_W_19    = (diff_19   > diff_19    [1])    ;
+def W_W_20    = (diff_20   > diff_20    [1])    ;
+def W_W_21    = (diff_21   > diff_21    [1])    ;
+def W_W_22    = (diff_22   > diff_22    [1])    ;
+def W_W_23    = (diff_23   > diff_23    [1])    ;
+def W_W_24    = (diff_24   > diff_24    [1])    ;
+def W_W_25    = (diff_25   > diff_25    [1])    ;
+def W_W_26    = (diff_26   > diff_26    [1])    ;
+def W_W_27    = (diff_27   > diff_27    [1])    ;
+def W_W_28    = (diff_28   > diff_28    [1])    ;
+def W_S_1    = (diff_1   < diff_1    [1]) and (step_up_1   )  ;
+def W_S_2    = (diff_2   < diff_2    [1]) and (step_up_2   )  ;
+def W_S_3    = (diff_3   < diff_3    [1]) and (step_up_3   )  ;
+def W_S_4    = (diff_4   < diff_4    [1]) and (step_up_4   )  ;
+def W_S_5    = (diff_5   < diff_5    [1]) and (step_up_5   )  ;
+def W_S_6    = (diff_6   < diff_6    [1]) and (step_up_6   )  ;
+def W_S_7    = (diff_7   < diff_7    [1]) and (step_up_7   )  ;
+def W_S_8    = (diff_8   < diff_8    [1]) and (step_up_8   )  ;
+def W_S_9    = (diff_9   < diff_9    [1]) and (step_up_9   )  ;
+def W_S_10    = (diff_10   < diff_10    [1]) and (step_up_10   )  ;
+def W_S_11    = (diff_11   < diff_11    [1]) and (step_up_11   )  ;
+def W_S_12    = (diff_12   < diff_12    [1]) and (step_up_12   )  ;
+def W_S_13    = (diff_13   < diff_13    [1]) and (step_up_13   )  ;
+def W_S_14    = (diff_14   < diff_14    [1]) and (step_up_14   )  ;
+def W_S_15    = (diff_15   < diff_15    [1]) and (step_up_15   )  ;
+def W_S_16    = (diff_16   < diff_16    [1]) and (step_up_16   )  ;
+def W_S_17    = (diff_17   < diff_17    [1]) and (step_up_17   )  ;
+def W_S_18    = (diff_18   < diff_18    [1]) and (step_up_18   )  ;
+def W_S_19    = (diff_19   < diff_19    [1]) and (step_up_19   )  ;
+def W_S_20    = (diff_20   < diff_20    [1]) and (step_up_20   )  ;
+def W_S_21    = (diff_21   < diff_21    [1]) and (step_up_21   )  ;
+def W_S_22    = (diff_22   < diff_22    [1]) and (step_up_22   )  ;
+def W_S_23    = (diff_23   < diff_23    [1]) and (step_up_23   )  ;
+def W_S_24    = (diff_24   < diff_24    [1]) and (step_up_24   )  ;
+def W_S_25    = (diff_25   < diff_25    [1]) and (step_up_25   )  ;
+def W_S_26    = (diff_26   < diff_26    [1]) and (step_up_26   )  ;
+def W_S_27    = (diff_27   < diff_27    [1]) and (step_up_27   )  ;
+def W_S_28    = (diff_28   < diff_28    [1]) and (step_up_28   )  ;
+def F_1 =  diff_1_negative  and (diff_1[1] > 0) ;
+def F_2 =  diff_2_negative  and (diff_2[1] > 0) ;
+def F_3 =  diff_3_negative  and (diff_3[1] > 0) ;
+def F_4 =  diff_4_negative  and (diff_4[1] > 0) ;
+def F_5 =  diff_5_negative  and (diff_5[1] > 0) ;
+def F_6 =  diff_6_negative  and (diff_6[1] > 0) ;
+def F_7 =  diff_7_negative  and (diff_7[1] > 0) ;
+def F_8 =  diff_8_negative  and (diff_8[1] > 0) ;
+def F_9 =  diff_9_negative  and (diff_9[1] > 0) ;
+def F_10 =  diff_10_negative  and (diff_10[1] > 0) ;
+def F_11 =  diff_11_negative  and (diff_11[1] > 0) ;
+def F_12 =  diff_12_negative  and (diff_12[1] > 0) ;
+def F_13 =  diff_13_negative  and (diff_13[1] > 0) ;
+def F_14 =  diff_14_negative  and (diff_14[1] > 0) ;
+def F_15 =  diff_15_negative  and (diff_15[1] > 0) ;
+def F_16 =  diff_16_negative  and (diff_16[1] > 0) ;
+def F_17 =  diff_17_negative  and (diff_17[1] > 0) ;
+def F_18 =  diff_18_negative  and (diff_18[1] > 0) ;
+def F_19 =  diff_19_negative  and (diff_19[1] > 0) ;
+def F_20 =  diff_20_negative  and (diff_20[1] > 0) ;
+def F_21 =  diff_21_negative  and (diff_21[1] > 0) ;
+def F_22 =  diff_22_negative  and (diff_22[1] > 0) ;
+def F_23 =  diff_23_negative  and (diff_23[1] > 0) ;
+def F_24 =  diff_24_negative  and (diff_24[1] > 0) ;
+def F_25 =  diff_25_negative  and (diff_25[1] > 0) ;
+def F_26 =  diff_26_negative  and (diff_26[1] > 0) ;
+def F_27 =  diff_27_negative  and (diff_27[1] > 0) ;
+def F_28 =  diff_28_negative  and (diff_28[1] > 0) ; 
+# def counter_up_green_1   =  if (((step_up_1 ))  and (diff_1[1]    > 0 )) then  counter_up_green_1   [1]+1 else 0  ; 
+# def counter_up_green_2   =  if (((step_up_2 ))  and (diff_2[1]    > 0 )) then  counter_up_green_2   [1]+1 else 0  ; 
+# def counter_up_green_3   =  if (((step_up_3 ))  and (diff_3[1]    > 0 )) then  counter_up_green_3   [1]+1 else 0  ; 
+def counter_up_green_4   =  if (((step_up_4 ))  and (diff_4[1]    > 0 )) then  counter_up_green_4   [1] + 1 else 0  ;
+def counter_up_green_5   =  if (((step_up_5 ))  and (diff_5[1]    > 0 )) then  counter_up_green_5   [1] + 1 else 0  ;
+def counter_up_green_6   =  if (((step_up_6 ))  and (diff_6[1]    > 0 )) then  counter_up_green_6   [1] + 1 else 0  ;
+def counter_up_green_7   =  if (((step_up_7 ))  and (diff_7[1]    > 0 )) then  counter_up_green_7   [1] + 1 else 0  ;
+def counter_up_green_8   =  if (((step_up_8 ))  and (diff_8[1]    > 0 )) then  counter_up_green_8   [1] + 1 else 0  ;
+def counter_up_green_9   =  if (((step_up_9 ))  and (diff_9[1]    > 0 )) then  counter_up_green_9   [1] + 1 else 0  ;
+def counter_up_green_10   =  if (((step_up_10 ))  and (diff_10[1]    > 0 )) then  counter_up_green_10   [1] + 1 else 0  ;
+def counter_up_green_11   =  if (((step_up_11 ))  and (diff_11[1]    > 0 )) then  counter_up_green_11   [1] + 1 else 0  ;
+def counter_up_green_12   =  if (((step_up_12 ))  and (diff_12[1]    > 0 )) then  counter_up_green_12   [1] + 1 else 0  ;
+def counter_up_green_13   =  if (((step_up_13 ))  and (diff_13[1]    > 0 )) then  counter_up_green_13   [1] + 1 else 0  ;
+def counter_up_green_14   =  if (((step_up_14 ))  and (diff_14[1]    > 0 )) then  counter_up_green_14   [1] + 1 else 0  ;
+def counter_up_green_15   =  if (((step_up_15 ))  and (diff_15[1]    > 0 )) then  counter_up_green_15   [1] + 1 else 0  ;
+def counter_up_green_16   =  if (((step_up_16 ))  and (diff_16[1]    > 0 )) then  counter_up_green_16   [1] + 1 else 0  ;
+def counter_up_green_17   =  if (((step_up_17 ))  and (diff_17[1]    > 0 )) then  counter_up_green_17   [1] + 1 else 0  ;
+def counter_up_green_18   =  if (((step_up_18 ))  and (diff_18[1]    > 0 )) then  counter_up_green_18   [1] + 1 else 0  ;
+def counter_up_green_19   =  if (((step_up_19 ))  and (diff_19[1]    > 0 )) then  counter_up_green_19   [1] + 1 else 0  ;
+def counter_up_green_20   =  if (((step_up_20 ))  and (diff_20[1]    > 0 )) then  counter_up_green_20   [1] + 1 else 0  ;
+def counter_up_green_21   =  if (((step_up_21 ))  and (diff_21[1]    > 0 )) then  counter_up_green_21   [1] + 1 else 0  ;
+def counter_up_green_22   =  if (((step_up_22 ))  and (diff_22[1]    > 0 )) then  counter_up_green_22   [1] + 1 else 0  ;
+def counter_up_green_23   =  if (((step_up_23 ))  and (diff_23[1]    > 0 )) then  counter_up_green_23   [1] + 1 else 0  ;
+def counter_up_green_24   =  if (((step_up_24 ))  and (diff_24[1]    > 0 )) then  counter_up_green_24   [1] + 1 else 0  ;
+def counter_up_green_25   =  if (((step_up_25 ))  and (diff_25[1]    > 0 )) then  counter_up_green_25   [1] + 1 else 0  ;
+def counter_up_green_26   =  if (((step_up_26 ))  and (diff_26[1]    > 0 )) then  counter_up_green_26   [1] + 1 else 0  ;
+def counter_up_green_27   =  if (((step_up_27 ))  and (diff_27[1]    > 0 )) then  counter_up_green_27   [1] + 1 else 0  ;
+def counter_up_green_28   =  if (((step_up_28 ))  and (diff_28[1]    > 0 )) then  counter_up_green_28   [1] + 1 else 0  ; 
+#def Static_counter_up_green_1     = if (diff_1_positive  )then  0 else counter_up_green_1      ; 
+#def Static_counter_up_green_2     = if (diff_2_positive  )then  0 else counter_up_green_2      ; 
+#def Static_counter_up_green_3     = if (diff_3_positive  )then  0 else counter_up_green_3      ; 
+def Static_counter_up_green_4     = if (diff_4_positive  ) then  0 else counter_up_green_4      ;
+def Static_counter_up_green_5     = if (diff_5_positive  ) then  0 else counter_up_green_5      ;
+def Static_counter_up_green_6     = if (diff_6_positive  ) then  0 else counter_up_green_6      ;
+def Static_counter_up_green_7     = if (diff_7_positive  ) then  0 else counter_up_green_7      ;
+def Static_counter_up_green_8     = if (diff_8_positive  ) then  0 else counter_up_green_8      ;
+def Static_counter_up_green_9     = if (diff_9_positive  ) then  0 else counter_up_green_9      ;
+def Static_counter_up_green_10     = if (diff_10_positive  ) then  0 else counter_up_green_10      ;
+def Static_counter_up_green_11     = if (diff_11_positive  ) then  0 else counter_up_green_11      ;
+def Static_counter_up_green_12     = if (diff_12_positive  ) then  0 else counter_up_green_12      ;
+def Static_counter_up_green_13     = if (diff_13_positive  ) then  0 else counter_up_green_13      ;
+def Static_counter_up_green_14     = if (diff_14_positive  ) then  0 else counter_up_green_14      ;
+def Static_counter_up_green_15     = if (diff_15_positive  ) then  0 else counter_up_green_15      ;
+def Static_counter_up_green_16     = if (diff_16_positive  ) then  0 else counter_up_green_16      ;
+def Static_counter_up_green_17     = if (diff_17_positive  ) then  0 else counter_up_green_17      ;
+def Static_counter_up_green_18     = if (diff_18_positive  ) then  0 else counter_up_green_18      ;
+def Static_counter_up_green_19     = if (diff_19_positive  ) then  0 else counter_up_green_19      ;
+def Static_counter_up_green_20     = if (diff_20_positive  ) then  0 else counter_up_green_20      ;
+def Static_counter_up_green_21     = if (diff_21_positive  ) then  0 else counter_up_green_21      ;
+def Static_counter_up_green_22     = if (diff_22_positive  ) then  0 else counter_up_green_22      ;
+def Static_counter_up_green_23     = if (diff_23_positive  ) then  0 else counter_up_green_23      ;
+def Static_counter_up_green_24     = if (diff_24_positive  ) then  0 else counter_up_green_24      ;
+def Static_counter_up_green_25     = if (diff_25_positive  ) then  0 else counter_up_green_25      ;
+def Static_counter_up_green_26     = if (diff_26_positive  ) then  0 else counter_up_green_26      ;
+def Static_counter_up_green_27     = if (diff_27_positive  ) then  0 else counter_up_green_27      ;
+def Static_counter_up_green_28     = if (diff_28_positive  ) then  0 else counter_up_green_28      ; 
+# def counter_up_total_1   =  if ((step_up_1 )  ) then  counter_up_total_1   [1]+1 else 0  ; 
+# def counter_up_total_2   =  if ((step_up_2 )  ) then  counter_up_total_2   [1]+1 else 0  ; 
+# def counter_up_total_3   =  if ((step_up_3 )  ) then  counter_up_total_3   [1]+1 else 0  ; 
+def counter_up_total_4   =  if ((step_up_4 )  ) then  counter_up_total_4   [1] + 1 else 0  ;
+def counter_up_total_5   =  if ((step_up_5 )  ) then  counter_up_total_5   [1] + 1 else 0  ;
+def counter_up_total_6   =  if ((step_up_6 )  ) then  counter_up_total_6   [1] + 1 else 0  ;
+def counter_up_total_7   =  if ((step_up_7 )  ) then  counter_up_total_7   [1] + 1 else 0  ;
+def counter_up_total_8   =  if ((step_up_8 )  ) then  counter_up_total_8   [1] + 1 else 0  ;
+def counter_up_total_9   =  if ((step_up_9 )  ) then  counter_up_total_9   [1] + 1 else 0  ;
+def counter_up_total_10   =  if ((step_up_10 )  ) then  counter_up_total_10   [1] + 1 else 0  ;
+def counter_up_total_11   =  if ((step_up_11 )  ) then  counter_up_total_11   [1] + 1 else 0  ;
+def counter_up_total_12   =  if ((step_up_12 )  ) then  counter_up_total_12   [1] + 1 else 0  ;
+def counter_up_total_13   =  if ((step_up_13 )  ) then  counter_up_total_13   [1] + 1 else 0  ;
+def counter_up_total_14   =  if ((step_up_14 )  ) then  counter_up_total_14   [1] + 1 else 0  ;
+def counter_up_total_15   =  if ((step_up_15 )  ) then  counter_up_total_15   [1] + 1 else 0  ;
+def counter_up_total_16   =  if ((step_up_16 )  ) then  counter_up_total_16   [1] + 1 else 0  ;
+def counter_up_total_17   =  if ((step_up_17 )  ) then  counter_up_total_17   [1] + 1 else 0  ;
+def counter_up_total_18   =  if ((step_up_18 )  ) then  counter_up_total_18   [1] + 1 else 0  ;
+def counter_up_total_19   =  if ((step_up_19 )  ) then  counter_up_total_19   [1] + 1 else 0  ;
+def counter_up_total_20   =  if ((step_up_20 )  ) then  counter_up_total_20   [1] + 1 else 0  ;
+def counter_up_total_21   =  if ((step_up_21 )  ) then  counter_up_total_21   [1] + 1 else 0  ;
+def counter_up_total_22   =  if ((step_up_22 )  ) then  counter_up_total_22   [1] + 1 else 0  ;
+def counter_up_total_23   =  if ((step_up_23 )  ) then  counter_up_total_23   [1] + 1 else 0  ;
+def counter_up_total_24   =  if ((step_up_24 )  ) then  counter_up_total_24   [1] + 1 else 0  ;
+def counter_up_total_25   =  if ((step_up_25 )  ) then  counter_up_total_25   [1] + 1 else 0  ;
+def counter_up_total_26   =  if ((step_up_26 )  ) then  counter_up_total_26   [1] + 1 else 0  ;
+def counter_up_total_27   =  if ((step_up_27 )  ) then  counter_up_total_27   [1] + 1 else 0  ;
+def counter_up_total_28   =  if ((step_up_28 )  ) then  counter_up_total_28   [1] + 1 else 0  ; 
+# def counter_up_red_1   =  if ((step_up_1 )  and   (diff_1 [1]   < 0 )) then  counter_up_red_1   [1]+1 else 0  ; 
+# def counter_up_red_2   =  if ((step_up_2 )  and   (diff_2 [1]   < 0 )) then  counter_up_red_2   [1]+1 else 0  ; 
+ #def counter_up_red_3   =  if ((step_up_3 )  and   (diff_3 [1]   < 0 )) then  counter_up_red_3   [1]+1 else 0  ; 
+def counter_up_red_4   =  if ((step_up_4 )  and   (diff_4 [1]   < 0 )) then  counter_up_red_4   [1] + 1 else 0  ;
+def counter_up_red_5   =  if ((step_up_5 )  and   (diff_5 [1]   < 0 )) then  counter_up_red_5   [1] + 1 else 0  ;
+def counter_up_red_6   =  if ((step_up_6 )  and   (diff_6 [1]   < 0 )) then  counter_up_red_6   [1] + 1 else 0  ;
+def counter_up_red_7   =  if ((step_up_7 )  and   (diff_7 [1]   < 0 )) then  counter_up_red_7   [1] + 1 else 0  ;
+def counter_up_red_8   =  if ((step_up_8 )  and   (diff_8 [1]   < 0 )) then  counter_up_red_8   [1] + 1 else 0  ;
+def counter_up_red_9   =  if ((step_up_9 )  and   (diff_9 [1]   < 0 )) then  counter_up_red_9   [1] + 1 else 0  ;
+def counter_up_red_10   =  if ((step_up_10 )  and   (diff_10 [1]   < 0 )) then  counter_up_red_10   [1] + 1 else 0  ;
+def counter_up_red_11   =  if ((step_up_11 )  and   (diff_11 [1]   < 0 )) then  counter_up_red_11   [1] + 1 else 0  ;
+def counter_up_red_12   =  if ((step_up_12 )  and   (diff_12 [1]   < 0 )) then  counter_up_red_12   [1] + 1 else 0  ;
+def counter_up_red_13   =  if ((step_up_13 )  and   (diff_13 [1]   < 0 )) then  counter_up_red_13   [1] + 1 else 0  ;
+def counter_up_red_14   =  if ((step_up_14 )  and   (diff_14 [1]   < 0 )) then  counter_up_red_14   [1] + 1 else 0  ;
+def counter_up_red_15   =  if ((step_up_15 )  and   (diff_15 [1]   < 0 )) then  counter_up_red_15   [1] + 1 else 0  ;
+def counter_up_red_16   =  if ((step_up_16 )  and   (diff_16 [1]   < 0 )) then  counter_up_red_16   [1] + 1 else 0  ;
+def counter_up_red_17   =  if ((step_up_17 )  and   (diff_17 [1]   < 0 )) then  counter_up_red_17   [1] + 1 else 0  ;
+def counter_up_red_18   =  if ((step_up_18 )  and   (diff_18 [1]   < 0 )) then  counter_up_red_18   [1] + 1 else 0  ;
+def counter_up_red_19   =  if ((step_up_19 )  and   (diff_19 [1]   < 0 )) then  counter_up_red_19   [1] + 1 else 0  ;
+def counter_up_red_20   =  if ((step_up_20 )  and   (diff_20 [1]   < 0 )) then  counter_up_red_20   [1] + 1 else 0  ;
+def counter_up_red_21   =  if ((step_up_21 )  and   (diff_21 [1]   < 0 )) then  counter_up_red_21   [1] + 1 else 0  ;
+def counter_up_red_22   =  if ((step_up_22 )  and   (diff_22 [1]   < 0 )) then  counter_up_red_22   [1] + 1 else 0  ;
+def counter_up_red_23   =  if ((step_up_23 )  and   (diff_23 [1]   < 0 )) then  counter_up_red_23   [1] + 1 else 0  ;
+def counter_up_red_24   =  if ((step_up_24 )  and   (diff_24 [1]   < 0 )) then  counter_up_red_24   [1] + 1 else 0  ;
+def counter_up_red_25   =  if ((step_up_25 )  and   (diff_25 [1]   < 0 )) then  counter_up_red_25   [1] + 1 else 0  ;
+def counter_up_red_26   =  if ((step_up_26 )  and   (diff_26 [1]   < 0 )) then  counter_up_red_26   [1] + 1 else 0  ;
+def counter_up_red_27   =  if ((step_up_27 )  and   (diff_27 [1]   < 0 )) then  counter_up_red_27   [1] + 1 else 0  ;
+def counter_up_red_28   =  if ((step_up_28 )  and   (diff_28 [1]   < 0 )) then  counter_up_red_28   [1] + 1 else 0  ;
+script extractPRIORITY {
+    input  W_W_1 = 1;
+    input  Diff_1_negative = 1;
+    input W_S_1 = 1;
+    input  F_1 = 1;
+    input  Diff_1_positive = 1;
+    plot  Priority_selector_1   = if ( W_W_1  and Diff_1_negative ) is true then 5 else  if (W_S_1  and F_1) is true then 4 else if  (W_S_1   and Diff_1_negative )    is true then 3 else if F_1  is true then 2 else if ( W_S_1   and Diff_1_positive ) is true then 1  else if ( W_W_1   and Diff_1_positive ) is true then 0  else  -9  ;
+    ;
+}
+def Priority_selector_1   = extractPRIORITY ( W_W_1 ,   Diff_1_negative ,   W_S_1 ,   F_1 ,  Diff_1_positive) ;
+def Priority_selector_2   = extractPRIORITY ( W_W_2 ,   diff_2_negative ,   W_S_2 ,   F_2 ,  diff_2_positive) ;
+def Priority_selector_3   = extractPRIORITY ( W_W_3 ,   diff_3_negative ,   W_S_3 ,   F_3 ,  diff_3_positive) ;
+def Priority_selector_4   = extractPRIORITY ( W_W_4 ,   diff_4_negative ,   W_S_4 ,   F_4 ,  diff_4_positive) ;
+def Priority_selector_5   = extractPRIORITY ( W_W_5 ,   diff_5_negative ,   W_S_5 ,   F_5 ,  diff_5_positive) ;
+def Priority_selector_6   = extractPRIORITY ( W_W_6 ,   diff_6_negative ,   W_S_6 ,   F_6 ,  diff_6_positive) ;
+def Priority_selector_7   = extractPRIORITY ( W_W_7 ,   diff_7_negative ,   W_S_7 ,   F_7 ,  diff_7_positive) ;
+def Priority_selector_8   = extractPRIORITY ( W_W_8 ,   diff_8_negative ,   W_S_8 ,   F_8 ,  diff_8_positive) ;
+def Priority_selector_9   = extractPRIORITY ( W_W_9 ,   diff_9_negative ,   W_S_9 ,   F_9 ,  diff_9_positive) ;
+def Priority_selector_10   = extractPRIORITY ( W_W_10 ,   diff_10_negative ,   W_S_10 ,   F_10 ,  diff_10_positive) ;
+def Priority_selector_11   = extractPRIORITY ( W_W_11 ,   diff_11_negative ,   W_S_11 ,   F_11 ,  diff_11_positive) ;
+def Priority_selector_12   = extractPRIORITY ( W_W_12 ,   diff_12_negative ,   W_S_12 ,   F_12 ,  diff_12_positive) ;
+def Priority_selector_13   = extractPRIORITY ( W_W_13 ,   diff_13_negative ,   W_S_13 ,   F_13 ,  diff_13_positive) ;
+def Priority_selector_14   = extractPRIORITY ( W_W_14 ,   diff_14_negative ,   W_S_14 ,   F_14 ,  diff_14_positive) ;
+def Priority_selector_15   = extractPRIORITY ( W_W_15 ,   diff_15_negative ,   W_S_15 ,   F_15 ,  diff_15_positive) ;
+def Priority_selector_16   = extractPRIORITY ( W_W_16 ,   diff_16_negative ,   W_S_16 ,   F_16 ,  diff_16_positive) ;
+def Priority_selector_17   = extractPRIORITY ( W_W_17 ,   diff_17_negative ,   W_S_17 ,   F_17 ,  diff_17_positive) ;
+def Priority_selector_18   = extractPRIORITY ( W_W_18 ,   diff_18_negative ,   W_S_18 ,   F_18 ,  diff_18_positive) ;
+def Priority_selector_19   = extractPRIORITY ( W_W_19 ,   diff_19_negative ,   W_S_19 ,   F_19 ,  diff_19_positive) ;
+def Priority_selector_20   = extractPRIORITY ( W_W_20 ,   diff_20_negative ,   W_S_20 ,   F_20 ,  diff_20_positive) ;
+def Priority_selector_21   = extractPRIORITY ( W_W_21 ,   diff_21_negative ,   W_S_21 ,   F_21 ,  diff_21_positive) ;
+def Priority_selector_22   = extractPRIORITY ( W_W_22 ,   diff_22_negative ,   W_S_22 ,   F_22 ,  diff_22_positive) ;
+def Priority_selector_23   = extractPRIORITY ( W_W_23 ,   diff_23_negative ,   W_S_23 ,   F_23 ,  diff_23_positive) ;
+def Priority_selector_24   = extractPRIORITY ( W_W_24 ,   diff_24_negative ,   W_S_24 ,   F_24 ,  diff_24_positive) ;
+def Priority_selector_25   = extractPRIORITY ( W_W_25 ,   diff_25_negative ,   W_S_25 ,   F_25 ,  diff_25_positive) ;
+def Priority_selector_26   = extractPRIORITY ( W_W_26 ,   diff_26_negative ,   W_S_26 ,   F_26 ,  diff_26_positive) ;
+def Priority_selector_27   = extractPRIORITY ( W_W_27 ,   diff_27_negative ,   W_S_27 ,   F_27 ,  diff_27_positive) ;
+def Priority_selector_28   = extractPRIORITY ( W_W_28 ,   diff_28_negative ,   W_S_28 ,   F_28 ,  diff_28_positive) ;
+def smallest_counter_up_total =   #  Min(Min(Min(
+Min(Min(Min(Min(Min(Min(Min(Min(Min(Min(Min(Min(Min(Min(Min(Min(Min(Min(Min(Min(Min(Min(Min(Min 
+( counter_up_total_28 , counter_up_total_27 ) , counter_up_total_26   ) , counter_up_total_25 ) , counter_up_total_24 ) , counter_up_total_23 ) , counter_up_total_22 ) , counter_up_total_21 ) , counter_up_total_20 ) , counter_up_total_19 ) , counter_up_total_18 ) , counter_up_total_17 ) , counter_up_total_16 ) , counter_up_total_15 ) , counter_up_total_14 ) , counter_up_total_13 ) , counter_up_total_12 ) , counter_up_total_11 ) , counter_up_total_10 ) , counter_up_total_9 ) , counter_up_total_8 ) , counter_up_total_7 )  , counter_up_total_6 ) , counter_up_total_5 ) , counter_up_total_4 )
+# , counter_up_total_3 ) , counter_up_total_2 ) , counter_up_total_1 )
+;
+def Max_counter_up_total =   # Max(Max(Max(
+Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max 
+( counter_up_total_28 , counter_up_total_27 ) , counter_up_total_26   ) , counter_up_total_25 ) , counter_up_total_24 ) , counter_up_total_23 ) , counter_up_total_22 ) , counter_up_total_21 ) , counter_up_total_20 ) , counter_up_total_19 ) , counter_up_total_18 ) , counter_up_total_17 ) , counter_up_total_16 ) , counter_up_total_15 ) , counter_up_total_14 ) , counter_up_total_13 ) , counter_up_total_12 ) , counter_up_total_11 ) , counter_up_total_10 ) , counter_up_total_9 ) , counter_up_total_8 ) , counter_up_total_7 )  , counter_up_total_6 ) , counter_up_total_5 ) , counter_up_total_4 ) 
+#, counter_up_total_3 ) , counter_up_total_2 ) , counter_up_total_1 )
+;
+def Static_Max_counter_up_total = if close < tline then  Static_Max_counter_up_total [1] else Max_counter_up_total ;
+def Max_counter_up_RED =    # Max(Max(Max(
+Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max 
+( counter_up_red_28 , counter_up_red_27 ) , counter_up_red_26   ) , counter_up_red_25 ) , counter_up_red_24 ) , counter_up_red_23 ) , counter_up_red_22 ) , counter_up_red_21 ) , counter_up_red_20 ) , counter_up_red_19 ) , counter_up_red_18 ) , counter_up_red_17 ) , counter_up_red_16 ) , counter_up_red_15 ) , counter_up_red_14 ) , counter_up_red_13 ) , counter_up_red_12 ) , counter_up_red_11 ) , counter_up_red_10 ) , counter_up_red_9 ) , counter_up_red_8 ) , counter_up_red_7 )  , counter_up_red_6 ) , counter_up_red_5 ) , counter_up_red_4 ) 
+# , counter_up_RED_3 ) , counter_up_RED_2 ) , counter_up_RED_1 )
+;
+def Static_Max_counter_up_RED = if close < tline then  Static_Max_counter_up_RED [1] else Max_counter_up_RED ;
+def Max_counter_up_green =   # Max(Max(Max(
+Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max 
+( counter_up_green_28 , counter_up_green_27 ) , counter_up_green_26   ) , counter_up_green_25 ) , counter_up_green_24 ) , counter_up_green_23 ) , counter_up_green_22 ) , counter_up_green_21 ) , counter_up_green_20 ) , counter_up_green_19 ) , counter_up_green_18 ) , counter_up_green_17 ) , counter_up_green_16 ) , counter_up_green_15 ) , counter_up_green_14 ) , counter_up_green_13 ) , counter_up_green_12 ) , counter_up_green_11 ) , counter_up_green_10 ) , counter_up_green_9 ) , counter_up_green_8 ) , counter_up_green_7 )  , counter_up_green_6 ) , counter_up_green_5 ) , counter_up_green_4 )
+# , counter_up_green_3 ) , counter_up_green_2 ) , counter_up_green_1 )
+;
+#def Static_Max_counter_up_green = if close<tline then  Static_Max_counter_up_green [1] else Max_counter_up_green ;
+def Max_STATIC_counter_up_green =  #  Max(Max(Max(
+Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max 
+( Static_counter_up_green_28 , Static_counter_up_green_27 ) , Static_counter_up_green_26   ) , Static_counter_up_green_25 ) , Static_counter_up_green_24 ) , Static_counter_up_green_23 ) , Static_counter_up_green_22 ) , Static_counter_up_green_21 ) , Static_counter_up_green_20 ) , Static_counter_up_green_19 ) , Static_counter_up_green_18 ) , Static_counter_up_green_17 ) , Static_counter_up_green_16 ) , Static_counter_up_green_15 ) , Static_counter_up_green_14 ) , Static_counter_up_green_13 ) , Static_counter_up_green_12 ) , Static_counter_up_green_11 ) , Static_counter_up_green_10 ) , Static_counter_up_green_9 ) , Static_counter_up_green_8 ) , Static_counter_up_green_7 )  , Static_counter_up_green_6 ) , Static_counter_up_green_5 ) , Static_counter_up_green_4 ) 
+ #, STATIC_counter_up_green_3 ) , STATIC_counter_up_green_2 ) , STATIC_counter_up_green_1 )
+;
+def Static_Max_counter_up_green = if close < tline then  Max_STATIC_counter_up_green   else 0;
+#def counter_up_red_after_green_1 =   if (static_counter_up_green_1 ==  static_max_counter_up_green ) then counter_up_total_1 else 0 ;
+#def counter_up_red_after_green_2 =   if (static_counter_up_green_2 ==  static_max_counter_up_green ) then counter_up_total_2 else 0 ;
+#def counter_up_red_after_green_3 =   if (static_counter_up_green_3 ==  static_max_counter_up_green ) then counter_up_total_3 else 0 ;
+def counter_up_red_after_green_4 =   if (Static_counter_up_green_4 ==  Static_Max_counter_up_green ) then counter_up_total_4 else 0 ;
+def counter_up_red_after_green_5 =   if (Static_counter_up_green_5 ==  Static_Max_counter_up_green ) then counter_up_total_5 else 0 ;
+def counter_up_red_after_green_6 =   if (Static_counter_up_green_6 ==  Static_Max_counter_up_green ) then counter_up_total_6 else 0 ;
+def counter_up_red_after_green_7 =   if (Static_counter_up_green_7 ==  Static_Max_counter_up_green ) then counter_up_total_7 else 0 ;
+def counter_up_red_after_green_8 =   if (Static_counter_up_green_8 ==  Static_Max_counter_up_green ) then counter_up_total_8 else 0 ;
+def counter_up_red_after_green_9 =   if (Static_counter_up_green_9 ==  Static_Max_counter_up_green ) then counter_up_total_9 else 0 ;
+def counter_up_red_after_green_10 =   if (Static_counter_up_green_10 ==  Static_Max_counter_up_green ) then counter_up_total_10 else 0 ;
+def counter_up_red_after_green_11 =   if (Static_counter_up_green_11 ==  Static_Max_counter_up_green ) then counter_up_total_11 else 0 ;
+def counter_up_red_after_green_12 =   if (Static_counter_up_green_12 ==  Static_Max_counter_up_green ) then counter_up_total_12 else 0 ;
+def counter_up_red_after_green_13 =   if (Static_counter_up_green_13 ==  Static_Max_counter_up_green ) then counter_up_total_13 else 0 ;
+def counter_up_red_after_green_14 =   if (Static_counter_up_green_14 ==  Static_Max_counter_up_green ) then counter_up_total_14 else 0 ;
+def counter_up_red_after_green_15 =   if (Static_counter_up_green_15 ==  Static_Max_counter_up_green ) then counter_up_total_15 else 0 ;
+def counter_up_red_after_green_16 =   if (Static_counter_up_green_16 ==  Static_Max_counter_up_green ) then counter_up_total_16 else 0 ;
+def counter_up_red_after_green_17 =   if (Static_counter_up_green_17 ==  Static_Max_counter_up_green ) then counter_up_total_17 else 0 ;
+def counter_up_red_after_green_18 =   if (Static_counter_up_green_18 ==  Static_Max_counter_up_green ) then counter_up_total_18 else 0 ;
+def counter_up_red_after_green_19 =   if (Static_counter_up_green_19 ==  Static_Max_counter_up_green ) then counter_up_total_19 else 0 ;
+def counter_up_red_after_green_20 =   if (Static_counter_up_green_20 ==  Static_Max_counter_up_green ) then counter_up_total_20 else 0 ;
+def counter_up_red_after_green_21 =   if (Static_counter_up_green_21 ==  Static_Max_counter_up_green ) then counter_up_total_21 else 0 ;
+def counter_up_red_after_green_22 =   if (Static_counter_up_green_22 ==  Static_Max_counter_up_green ) then counter_up_total_22 else 0 ;
+def counter_up_red_after_green_23 =   if (Static_counter_up_green_23 ==  Static_Max_counter_up_green ) then counter_up_total_23 else 0 ;
+def counter_up_red_after_green_24 =   if (Static_counter_up_green_24 ==  Static_Max_counter_up_green ) then counter_up_total_24 else 0 ;
+def counter_up_red_after_green_25 =   if (Static_counter_up_green_25 ==  Static_Max_counter_up_green ) then counter_up_total_25 else 0 ;
+def counter_up_red_after_green_26 =   if (Static_counter_up_green_26 ==  Static_Max_counter_up_green ) then counter_up_total_26 else 0 ;
+def counter_up_red_after_green_27 =   if (Static_counter_up_green_27 ==  Static_Max_counter_up_green ) then counter_up_total_27 else 0 ;
+def counter_up_red_after_green_28 =   if (Static_counter_up_green_28 ==  Static_Max_counter_up_green ) then counter_up_total_28 else 0 ;
+def Max_counter_up_red_after_green =   # Max(Max(Max(
+Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max 
+( counter_up_red_after_green_28 , counter_up_red_after_green_27 ) , counter_up_red_after_green_26   ) , counter_up_red_after_green_25 ) , counter_up_red_after_green_24 ) , counter_up_red_after_green_23 ) , counter_up_red_after_green_22 ) , counter_up_red_after_green_21 ) , counter_up_red_after_green_20 ) , counter_up_red_after_green_19 ) , counter_up_red_after_green_18 ) , counter_up_red_after_green_17 ) , counter_up_red_after_green_16 ) , counter_up_red_after_green_15 ) , counter_up_red_after_green_14 ) , counter_up_red_after_green_13 ) , counter_up_red_after_green_12 ) , counter_up_red_after_green_11 ) , counter_up_red_after_green_10 ) , counter_up_red_after_green_9 ) , counter_up_red_after_green_8 ) , counter_up_red_after_green_7 )  , counter_up_red_after_green_6 ) , counter_up_red_after_green_5 ) , counter_up_red_after_green_4 ) 
+#, counter_up_red_after_green_3 ) , counter_up_red_after_green_2 ) , counter_up_red_after_green_1 )
+;
+def Static_Max_counter_up_red_after_green = if close < tline then  Static_Max_counter_up_red_after_green [1] else Max_counter_up_red_after_green ;
+ 
+ #def  x_Positive_Diff_1 = if (diff_1_positive and ( diff_1[1] < diff_1 )  ) then x else x_Positive_Diff_1 [1] ;
+ #def  x_Positive_Diff_2 = if (diff_2_positive and ( diff_2[1] < diff_2 )  ) then x else x_Positive_Diff_2 [1] ;
+ #def  x_Positive_Diff_3 = if (diff_3_positive and ( diff_3[1] < diff_3 )  ) then x else x_Positive_Diff_3 [1] ;
+def  x_Positive_Diff_4 = if (diff_4_positive and ( diff_4[1] < diff_4 )  ) then x else x_Positive_Diff_4 [1] ;
+def  x_Positive_Diff_5 = if (diff_5_positive and ( diff_5[1] < diff_5 )  ) then x else x_Positive_Diff_5 [1] ;
+def  x_Positive_Diff_6 = if (diff_6_positive and ( diff_6[1] < diff_6 )  ) then x else x_Positive_Diff_6 [1] ;
+def  x_Positive_Diff_7 = if (diff_7_positive and ( diff_7[1] < diff_7 )  ) then x else x_Positive_Diff_7 [1] ;
+def  x_Positive_Diff_8 = if (diff_8_positive and ( diff_8[1] < diff_8 )  ) then x else x_Positive_Diff_8 [1] ;
+def  x_Positive_Diff_9 = if (diff_9_positive and ( diff_9[1] < diff_9 )  ) then x else x_Positive_Diff_9 [1] ;
+def  x_Positive_Diff_10 = if (diff_10_positive and ( diff_10[1] < diff_10 )  ) then x else x_Positive_Diff_10 [1] ;
+def  x_Positive_Diff_11 = if (diff_11_positive and ( diff_11[1] < diff_11 )  ) then x else x_Positive_Diff_11 [1] ;
+def  x_Positive_Diff_12 = if (diff_12_positive and ( diff_12[1] < diff_12 )  ) then x else x_Positive_Diff_12 [1] ;
+def  x_Positive_Diff_13 = if (diff_13_positive and ( diff_13[1] < diff_13 )  ) then x else x_Positive_Diff_13 [1] ;
+def  x_Positive_Diff_14 = if (diff_14_positive and ( diff_14[1] < diff_14 )  ) then x else x_Positive_Diff_14 [1] ;
+def  x_Positive_Diff_15 = if (diff_15_positive and ( diff_15[1] < diff_15 )  ) then x else x_Positive_Diff_15 [1] ;
+def  x_Positive_Diff_16 = if (diff_16_positive and ( diff_16[1] < diff_16 )  ) then x else x_Positive_Diff_16 [1] ;
+def  x_Positive_Diff_17 = if (diff_17_positive and ( diff_17[1] < diff_17 )  ) then x else x_Positive_Diff_17 [1] ;
+def  x_Positive_Diff_18 = if (diff_18_positive and ( diff_18[1] < diff_18 )  ) then x else x_Positive_Diff_18 [1] ;
+def  x_Positive_Diff_19 = if (diff_19_positive and ( diff_19[1] < diff_19 )  ) then x else x_Positive_Diff_19 [1] ;
+def  x_Positive_Diff_20 = if (diff_20_positive and ( diff_20[1] < diff_20 )  ) then x else x_Positive_Diff_20 [1] ;
+def  x_Positive_Diff_21 = if (diff_21_positive and ( diff_21[1] < diff_21 )  ) then x else x_Positive_Diff_21 [1] ;
+def  x_Positive_Diff_22 = if (diff_22_positive and ( diff_22[1] < diff_22 )  ) then x else x_Positive_Diff_22 [1] ;
+def  x_Positive_Diff_23 = if (diff_23_positive and ( diff_23[1] < diff_23 )  ) then x else x_Positive_Diff_23 [1] ;
+def  x_Positive_Diff_24 = if (diff_24_positive and ( diff_24[1] < diff_24 )  ) then x else x_Positive_Diff_24 [1] ;
+def  x_Positive_Diff_25 = if (diff_25_positive and ( diff_25[1] < diff_25 )  ) then x else x_Positive_Diff_25 [1] ;
+def  x_Positive_Diff_26 = if (diff_26_positive and ( diff_26[1] < diff_26 )  ) then x else x_Positive_Diff_26 [1] ;
+def  x_Positive_Diff_27 = if (diff_27_positive and ( diff_27[1] < diff_27 )  ) then x else x_Positive_Diff_27 [1] ;
+def  x_Positive_Diff_28 = if (diff_28_positive and ( diff_28[1] < diff_28 )  ) then x else x_Positive_Diff_28 [1] ;
+# def flip_greencounter_1 = if f_1 then x_Positive_Diff_1 else 0; 
+# def flip_greencounter_2 = if f_2 then x_Positive_Diff_2 else 0; 
+# def flip_greencounter_3 = if f_3 then x_Positive_Diff_3 else 0; 
+def flip_greencounter_4 = if F_4 then x_Positive_Diff_4 else 0;
+def flip_greencounter_5 = if F_5 then x_Positive_Diff_5 else 0;
+def flip_greencounter_6 = if F_6 then x_Positive_Diff_6 else 0;
+def flip_greencounter_7 = if F_7 then x_Positive_Diff_7 else 0;
+def flip_greencounter_8 = if F_8 then x_Positive_Diff_8 else 0;
+def flip_greencounter_9 = if F_9 then x_Positive_Diff_9 else 0;
+def flip_greencounter_10 = if F_10 then x_Positive_Diff_10 else 0;
+def flip_greencounter_11 = if F_11 then x_Positive_Diff_11 else 0;
+def flip_greencounter_12 = if F_12 then x_Positive_Diff_12 else 0;
+def flip_greencounter_13 = if F_13 then x_Positive_Diff_13 else 0;
+def flip_greencounter_14 = if F_14 then x_Positive_Diff_14 else 0;
+def flip_greencounter_15 = if F_15 then x_Positive_Diff_15 else 0;
+def flip_greencounter_16 = if F_16 then x_Positive_Diff_16 else 0;
+def flip_greencounter_17 = if F_17 then x_Positive_Diff_17 else 0;
+def flip_greencounter_18 = if F_18 then x_Positive_Diff_18 else 0;
+def flip_greencounter_19 = if F_19 then x_Positive_Diff_19 else 0;
+def flip_greencounter_20 = if F_20 then x_Positive_Diff_20 else 0;
+def flip_greencounter_21 = if F_21 then x_Positive_Diff_21 else 0;
+def flip_greencounter_22 = if F_22 then x_Positive_Diff_22 else 0;
+def flip_greencounter_23 = if F_23 then x_Positive_Diff_23 else 0;
+def flip_greencounter_24 = if F_24 then x_Positive_Diff_24 else 0;
+def flip_greencounter_25 = if F_25 then x_Positive_Diff_25 else 0;
+def flip_greencounter_26 = if F_26 then x_Positive_Diff_26 else 0;
+def flip_greencounter_27 = if F_27 then x_Positive_Diff_27 else 0;
+def flip_greencounter_28 = if F_28 then x_Positive_Diff_28 else 0;
+def MAX_flip_greencounter =   # MAX(MAX(MAX(
+Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max(Max 
+( flip_greencounter_28 , flip_greencounter_27 ) , flip_greencounter_26   ) , flip_greencounter_25 ) , flip_greencounter_24 ) , flip_greencounter_23 ) , flip_greencounter_22 ) , flip_greencounter_21 ) , flip_greencounter_20 ) , flip_greencounter_19 ) , flip_greencounter_18 ) , flip_greencounter_17 ) , flip_greencounter_16 ) , flip_greencounter_15 ) , flip_greencounter_14 ) , flip_greencounter_13 ) , flip_greencounter_12 ) , flip_greencounter_11 ) , flip_greencounter_10 ) , flip_greencounter_9 ) , flip_greencounter_8 ) , flip_greencounter_7 )  , flip_greencounter_6 ) , flip_greencounter_5 ) , flip_greencounter_4 ) #, flip_greencounter_3 ) , flip_greencounter_2 ) , flip_greencounter_1 )
+;
+def staticdiff_down = if trigger then
+(
+if Priority_selector_28 == 5 and (counter_up_red_28 == Max_counter_up_RED) then diff_28  else
+if Priority_selector_27 == 5 and (counter_up_red_27 == Max_counter_up_RED) then diff_27  else
+if Priority_selector_26 == 5 and (counter_up_red_26 == Max_counter_up_RED) then diff_26  else
+if Priority_selector_25 == 5 and (counter_up_red_25 == Max_counter_up_RED) then diff_25  else
+if Priority_selector_24 == 5 and (counter_up_red_24 == Max_counter_up_RED) then diff_24  else
+if Priority_selector_23 == 5 and (counter_up_red_23 == Max_counter_up_RED) then diff_23  else
+if Priority_selector_22 == 5 and (counter_up_red_22 == Max_counter_up_RED) then diff_22  else
+if Priority_selector_21 == 5 and (counter_up_red_21 == Max_counter_up_RED) then diff_21  else
+if Priority_selector_20 == 5 and (counter_up_red_20 == Max_counter_up_RED) then diff_20  else
+if Priority_selector_19 == 5 and (counter_up_red_19 == Max_counter_up_RED) then diff_19  else
+if Priority_selector_18 == 5 and (counter_up_red_18 == Max_counter_up_RED) then diff_18  else
+if Priority_selector_17 == 5 and (counter_up_red_17 == Max_counter_up_RED) then diff_17  else
+if Priority_selector_16 == 5 and (counter_up_red_16 == Max_counter_up_RED) then diff_16  else
+if Priority_selector_15 == 5 and (counter_up_red_15 == Max_counter_up_RED) then diff_15  else
+if Priority_selector_14 == 5 and (counter_up_red_14 == Max_counter_up_RED) then diff_14  else
+if Priority_selector_13 == 5 and (counter_up_red_13 == Max_counter_up_RED) then diff_13  else
+if Priority_selector_12 == 5 and (counter_up_red_12 == Max_counter_up_RED) then diff_12  else
+if Priority_selector_11 == 5 and (counter_up_red_11 == Max_counter_up_RED) then diff_11  else
+if Priority_selector_10 == 5 and (counter_up_red_10 == Max_counter_up_RED) then diff_10  else
+if Priority_selector_9 == 5 and (counter_up_red_9 == Max_counter_up_RED) then diff_9  else
+if Priority_selector_8 == 5 and (counter_up_red_8 == Max_counter_up_RED) then diff_8  else
+if Priority_selector_7 == 5 and (counter_up_red_7 == Max_counter_up_RED) then diff_7  else
+if Priority_selector_6 == 5 and (counter_up_red_6 == Max_counter_up_RED) then diff_6  else
+if Priority_selector_5 == 5 and (counter_up_red_5 == Max_counter_up_RED) then diff_5  else
+if Priority_selector_4 == 5 and (counter_up_red_4 == Max_counter_up_RED) then diff_4  else
+#if Priority_selector_3 == 5 and (counter_up_RED_3 == max_counter_up_RED) then Diff_3  else
+#if Priority_selector_2 == 5 and (counter_up_RED_2 == max_counter_up_RED) then Diff_2  else
+#if Priority_selector_1 == 5 and (counter_up_RED_1 == max_counter_up_RED) then Diff_1  else
+if Priority_selector_28 == 4 and (counter_up_red_after_green_28 == Static_Max_counter_up_red_after_green) then diff_28  else
+if Priority_selector_27 == 4 and (counter_up_red_after_green_27 == Static_Max_counter_up_red_after_green) then diff_27  else
+if Priority_selector_26 == 4 and (counter_up_red_after_green_26 == Static_Max_counter_up_red_after_green) then diff_26  else
+if Priority_selector_25 == 4 and (counter_up_red_after_green_25 == Static_Max_counter_up_red_after_green) then diff_25  else
+if Priority_selector_24 == 4 and (counter_up_red_after_green_24 == Static_Max_counter_up_red_after_green) then diff_24  else
+if Priority_selector_23 == 4 and (counter_up_red_after_green_23 == Static_Max_counter_up_red_after_green) then diff_23  else
+if Priority_selector_22 == 4 and (counter_up_red_after_green_22 == Static_Max_counter_up_red_after_green) then diff_22  else
+if Priority_selector_21 == 4 and (counter_up_red_after_green_21 == Static_Max_counter_up_red_after_green) then diff_21  else
+if Priority_selector_20 == 4 and (counter_up_red_after_green_20 == Static_Max_counter_up_red_after_green) then diff_20  else
+if Priority_selector_19 == 4 and (counter_up_red_after_green_19 == Static_Max_counter_up_red_after_green) then diff_19  else
+if Priority_selector_18 == 4 and (counter_up_red_after_green_18 == Static_Max_counter_up_red_after_green) then diff_18  else
+if Priority_selector_17 == 4 and (counter_up_red_after_green_17 == Static_Max_counter_up_red_after_green) then diff_17  else
+if Priority_selector_16 == 4 and (counter_up_red_after_green_16 == Static_Max_counter_up_red_after_green) then diff_16  else
+if Priority_selector_15 == 4 and (counter_up_red_after_green_15 == Static_Max_counter_up_red_after_green) then diff_15  else
+if Priority_selector_14 == 4 and (counter_up_red_after_green_14 == Static_Max_counter_up_red_after_green) then diff_14  else
+if Priority_selector_13 == 4 and (counter_up_red_after_green_13 == Static_Max_counter_up_red_after_green) then diff_13  else
+if Priority_selector_12 == 4 and (counter_up_red_after_green_12 == Static_Max_counter_up_red_after_green) then diff_12  else
+if Priority_selector_11 == 4 and (counter_up_red_after_green_11 == Static_Max_counter_up_red_after_green) then diff_11  else
+if Priority_selector_10 == 4 and (counter_up_red_after_green_10 == Static_Max_counter_up_red_after_green) then diff_10  else
+if Priority_selector_9 == 4 and (counter_up_red_after_green_9 == Static_Max_counter_up_red_after_green) then diff_9  else
+if Priority_selector_8 == 4 and (counter_up_red_after_green_8 == Static_Max_counter_up_red_after_green) then diff_8  else
+if Priority_selector_7 == 4 and (counter_up_red_after_green_7 == Static_Max_counter_up_red_after_green) then diff_7  else
+if Priority_selector_6 == 4 and (counter_up_red_after_green_6 == Static_Max_counter_up_red_after_green) then diff_6  else
+if Priority_selector_5 == 4 and (counter_up_red_after_green_5 == Static_Max_counter_up_red_after_green) then diff_5  else
+if Priority_selector_4 == 4 and (counter_up_red_after_green_4 == Static_Max_counter_up_red_after_green) then diff_4  else
+#if Priority_selector_3 == 4 and (Counter_up_red_after_green_3 == Static_Max_counter_up_red_after_green) then Diff_3  else
+#if Priority_selector_2 == 4 and (Counter_up_red_after_green_2 == Static_Max_counter_up_red_after_green) then Diff_2  else
+#if Priority_selector_1 == 4 and (Counter_up_red_after_green_1 == Static_Max_counter_up_red_after_green) then Diff_1  else
+if Priority_selector_28 == 4 and (counter_up_red_after_green_28 == Max_counter_up_red_after_green) then diff_28  else
+if Priority_selector_27 == 4 and (counter_up_red_after_green_27 == Max_counter_up_red_after_green) then diff_27  else
+if Priority_selector_26 == 4 and (counter_up_red_after_green_26 == Max_counter_up_red_after_green) then diff_26  else
+if Priority_selector_25 == 4 and (counter_up_red_after_green_25 == Max_counter_up_red_after_green) then diff_25  else
+if Priority_selector_24 == 4 and (counter_up_red_after_green_24 == Max_counter_up_red_after_green) then diff_24  else
+if Priority_selector_23 == 4 and (counter_up_red_after_green_23 == Max_counter_up_red_after_green) then diff_23  else
+if Priority_selector_22 == 4 and (counter_up_red_after_green_22 == Max_counter_up_red_after_green) then diff_22  else
+if Priority_selector_21 == 4 and (counter_up_red_after_green_21 == Max_counter_up_red_after_green) then diff_21  else
+if Priority_selector_20 == 4 and (counter_up_red_after_green_20 == Max_counter_up_red_after_green) then diff_20  else
+if Priority_selector_19 == 4 and (counter_up_red_after_green_19 == Max_counter_up_red_after_green) then diff_19  else
+if Priority_selector_18 == 4 and (counter_up_red_after_green_18 == Max_counter_up_red_after_green) then diff_18  else
+if Priority_selector_17 == 4 and (counter_up_red_after_green_17 == Max_counter_up_red_after_green) then diff_17  else
+if Priority_selector_16 == 4 and (counter_up_red_after_green_16 == Max_counter_up_red_after_green) then diff_16  else
+if Priority_selector_15 == 4 and (counter_up_red_after_green_15 == Max_counter_up_red_after_green) then diff_15  else
+if Priority_selector_14 == 4 and (counter_up_red_after_green_14 == Max_counter_up_red_after_green) then diff_14  else
+if Priority_selector_13 == 4 and (counter_up_red_after_green_13 == Max_counter_up_red_after_green) then diff_13  else
+if Priority_selector_12 == 4 and (counter_up_red_after_green_12 == Max_counter_up_red_after_green) then diff_12  else
+if Priority_selector_11 == 4 and (counter_up_red_after_green_11 == Max_counter_up_red_after_green) then diff_11  else
+if Priority_selector_10 == 4 and (counter_up_red_after_green_10 == Max_counter_up_red_after_green) then diff_10  else
+if Priority_selector_9 == 4 and (counter_up_red_after_green_9 == Max_counter_up_red_after_green) then diff_9  else
+if Priority_selector_8 == 4 and (counter_up_red_after_green_8 == Max_counter_up_red_after_green) then diff_8  else
+if Priority_selector_7 == 4 and (counter_up_red_after_green_7 == Max_counter_up_red_after_green) then diff_7  else
+if Priority_selector_6 == 4 and (counter_up_red_after_green_6 == Max_counter_up_red_after_green) then diff_6  else
+if Priority_selector_5 == 4 and (counter_up_red_after_green_5 == Max_counter_up_red_after_green) then diff_5  else
+if Priority_selector_4 == 4 and (counter_up_red_after_green_4 == Max_counter_up_red_after_green) then diff_4  else
+#if Priority_selector_3 == 4 and (Counter_up_red_after_green_3 == max_counter_up_red_after_green) then Diff_3  else
+#if Priority_selector_2 == 4 and (Counter_up_red_after_green_2 == max_counter_up_red_after_green) then Diff_2  else
+#if Priority_selector_1 == 4 and (Counter_up_red_after_green_1 == max_counter_up_red_after_green) then Diff_1  else
+if Priority_selector_28 == 3 and (counter_up_red_28 == Max_counter_up_RED) then diff_28  else
+if Priority_selector_27 == 3 and (counter_up_red_27 == Max_counter_up_RED) then diff_27  else
+if Priority_selector_26 == 3 and (counter_up_red_26 == Max_counter_up_RED) then diff_26  else
+if Priority_selector_25 == 3 and (counter_up_red_25 == Max_counter_up_RED) then diff_25  else
+if Priority_selector_24 == 3 and (counter_up_red_24 == Max_counter_up_RED) then diff_24  else
+if Priority_selector_23 == 3 and (counter_up_red_23 == Max_counter_up_RED) then diff_23  else
+if Priority_selector_22 == 3 and (counter_up_red_22 == Max_counter_up_RED) then diff_22  else
+if Priority_selector_21 == 3 and (counter_up_red_21 == Max_counter_up_RED) then diff_21  else
+if Priority_selector_20 == 3 and (counter_up_red_20 == Max_counter_up_RED) then diff_20  else
+if Priority_selector_19 == 3 and (counter_up_red_19 == Max_counter_up_RED) then diff_19  else
+if Priority_selector_18 == 3 and (counter_up_red_18 == Max_counter_up_RED) then diff_18  else
+if Priority_selector_17 == 3 and (counter_up_red_17 == Max_counter_up_RED) then diff_17  else
+if Priority_selector_16 == 3 and (counter_up_red_16 == Max_counter_up_RED) then diff_16  else
+if Priority_selector_15 == 3 and (counter_up_red_15 == Max_counter_up_RED) then diff_15  else
+if Priority_selector_14 == 3 and (counter_up_red_14 == Max_counter_up_RED) then diff_14  else
+if Priority_selector_13 == 3 and (counter_up_red_13 == Max_counter_up_RED) then diff_13  else
+if Priority_selector_12 == 3 and (counter_up_red_12 == Max_counter_up_RED) then diff_12  else
+if Priority_selector_11 == 3 and (counter_up_red_11 == Max_counter_up_RED) then diff_11  else
+if Priority_selector_10 == 3 and (counter_up_red_10 == Max_counter_up_RED) then diff_10  else
+if Priority_selector_9 == 3 and (counter_up_red_9 == Max_counter_up_RED) then diff_9  else
+if Priority_selector_8 == 3 and (counter_up_red_8 == Max_counter_up_RED) then diff_8  else
+if Priority_selector_7 == 3 and (counter_up_red_7 == Max_counter_up_RED) then diff_7  else
+if Priority_selector_6 == 3 and (counter_up_red_6 == Max_counter_up_RED) then diff_6  else
+if Priority_selector_5 == 3 and (counter_up_red_5 == Max_counter_up_RED) then diff_5  else
+if Priority_selector_4 == 3 and (counter_up_red_4 == Max_counter_up_RED) then diff_4  else
+#if Priority_selector_3 == 3 and (counter_up_RED_3 == max_counter_up_RED) then Diff_3  else
+#if Priority_selector_2 == 3 and (counter_up_RED_2 == max_counter_up_RED) then Diff_2  else
+#if Priority_selector_1 == 3 and (counter_up_RED_1 == max_counter_up_RED) then Diff_1  else
+ 
+if Priority_selector_28 == 1 and (counter_up_total_28 == smallest_counter_up_total) then diff_28  else
+if Priority_selector_27 == 1 and (counter_up_total_27 == smallest_counter_up_total) then diff_27  else
+if Priority_selector_26 == 1 and (counter_up_total_26 == smallest_counter_up_total) then diff_26  else
+if Priority_selector_25 == 1 and (counter_up_total_25 == smallest_counter_up_total) then diff_25  else
+if Priority_selector_24 == 1 and (counter_up_total_24 == smallest_counter_up_total) then diff_24  else
+if Priority_selector_23 == 1 and (counter_up_total_23 == smallest_counter_up_total) then diff_23  else
+if Priority_selector_22 == 1 and (counter_up_total_22 == smallest_counter_up_total) then diff_22  else
+if Priority_selector_21 == 1 and (counter_up_total_21 == smallest_counter_up_total) then diff_21  else
+if Priority_selector_20 == 1 and (counter_up_total_20 == smallest_counter_up_total) then diff_20  else
+if Priority_selector_19 == 1 and (counter_up_total_19 == smallest_counter_up_total) then diff_19  else
+if Priority_selector_18 == 1 and (counter_up_total_18 == smallest_counter_up_total) then diff_18  else
+if Priority_selector_17 == 1 and (counter_up_total_17 == smallest_counter_up_total) then diff_17  else
+if Priority_selector_16 == 1 and (counter_up_total_16 == smallest_counter_up_total) then diff_16  else
+if Priority_selector_15 == 1 and (counter_up_total_15 == smallest_counter_up_total) then diff_15  else
+if Priority_selector_14 == 1 and (counter_up_total_14 == smallest_counter_up_total) then diff_14  else
+if Priority_selector_13 == 1 and (counter_up_total_13 == smallest_counter_up_total) then diff_13  else
+if Priority_selector_12 == 1 and (counter_up_total_12 == smallest_counter_up_total) then diff_12  else
+if Priority_selector_11 == 1 and (counter_up_total_11 == smallest_counter_up_total) then diff_11  else
+if Priority_selector_10 == 1 and (counter_up_total_10 == smallest_counter_up_total) then diff_10  else
+if Priority_selector_9 == 1 and (counter_up_total_9 == smallest_counter_up_total) then diff_9  else
+if Priority_selector_8 == 1 and (counter_up_total_8 == smallest_counter_up_total) then diff_8  else
+if Priority_selector_7 == 1 and (counter_up_total_7 == smallest_counter_up_total) then diff_7  else
+if Priority_selector_6 == 1 and (counter_up_total_6 == smallest_counter_up_total) then diff_6  else
+if Priority_selector_5 == 1 and (counter_up_total_5 == smallest_counter_up_total) then diff_5  else
+if Priority_selector_4 == 1 and (counter_up_total_4 == smallest_counter_up_total) then diff_4  else
+#if Priority_selector_3 == 1 and (counter_up_total_3 == smallest_counter_up_total) then Diff_3  else
+#if Priority_selector_2 == 1 and (counter_up_total_2 == smallest_counter_up_total) then Diff_2  else
+#if Priority_selector_1 == 1 and (counter_up_total_1 == smallest_counter_up_total) then Diff_1  else
+if Priority_selector_28 == 0 and (counter_up_total_28 == smallest_counter_up_total) then diff_28  else
+if Priority_selector_27 == 0 and (counter_up_total_27 == smallest_counter_up_total) then diff_27  else
+if Priority_selector_26 == 0 and (counter_up_total_26 == smallest_counter_up_total) then diff_26  else
+if Priority_selector_25 == 0 and (counter_up_total_25 == smallest_counter_up_total) then diff_25  else
+if Priority_selector_24 == 0 and (counter_up_total_24 == smallest_counter_up_total) then diff_24  else
+if Priority_selector_23 == 0 and (counter_up_total_23 == smallest_counter_up_total) then diff_23  else
+if Priority_selector_22 == 0 and (counter_up_total_22 == smallest_counter_up_total) then diff_22  else
+if Priority_selector_21 == 0 and (counter_up_total_21 == smallest_counter_up_total) then diff_21  else
+if Priority_selector_20 == 0 and (counter_up_total_20 == smallest_counter_up_total) then diff_20  else
+if Priority_selector_19 == 0 and (counter_up_total_19 == smallest_counter_up_total) then diff_19  else
+if Priority_selector_18 == 0 and (counter_up_total_18 == smallest_counter_up_total) then diff_18  else
+if Priority_selector_17 == 0 and (counter_up_total_17 == smallest_counter_up_total) then diff_17  else
+if Priority_selector_16 == 0 and (counter_up_total_16 == smallest_counter_up_total) then diff_16  else
+if Priority_selector_15 == 0 and (counter_up_total_15 == smallest_counter_up_total) then diff_15  else
+if Priority_selector_14 == 0 and (counter_up_total_14 == smallest_counter_up_total) then diff_14  else
+if Priority_selector_13 == 0 and (counter_up_total_13 == smallest_counter_up_total) then diff_13  else
+if Priority_selector_12 == 0 and (counter_up_total_12 == smallest_counter_up_total) then diff_12  else
+if Priority_selector_11 == 0 and (counter_up_total_11 == smallest_counter_up_total) then diff_11  else
+if Priority_selector_10 == 0 and (counter_up_total_10 == smallest_counter_up_total) then diff_10  else
+if Priority_selector_9 == 0 and (counter_up_total_9 == smallest_counter_up_total) then diff_9  else
+if Priority_selector_8 == 0 and (counter_up_total_8 == smallest_counter_up_total) then diff_8  else
+if Priority_selector_7 == 0 and (counter_up_total_7 == smallest_counter_up_total) then diff_7  else
+if Priority_selector_6 == 0 and (counter_up_total_6 == smallest_counter_up_total) then diff_6  else
+if Priority_selector_5 == 0 and (counter_up_total_5 == smallest_counter_up_total) then diff_5  else
+if Priority_selector_4 == 0 and (counter_up_total_4 == smallest_counter_up_total) then diff_4  else
+#if Priority_selector_3 == 0 and (counter_up_total_3 == smallest_counter_up_total) then Diff_3  else
+#if Priority_selector_2 == 0 and (counter_up_total_2 == smallest_counter_up_total) then Diff_2  else
+#if Priority_selector_1 == 0 and (counter_up_total_1 == smallest_counter_up_total) then Diff_1  else
+####FLIP AS LAST PRIORITY####
+ if Priority_selector_28 == 2 and ( flip_greencounter_28 == MAX_flip_greencounter ) then diff_28 else 
+ if Priority_selector_27 == 2 and ( flip_greencounter_27 == MAX_flip_greencounter ) then diff_27 else 
+ if Priority_selector_26 == 2 and ( flip_greencounter_26 == MAX_flip_greencounter ) then diff_26 else 
+ if Priority_selector_25 == 2 and ( flip_greencounter_25 == MAX_flip_greencounter ) then diff_25 else 
+ if Priority_selector_24 == 2 and ( flip_greencounter_24 == MAX_flip_greencounter ) then diff_24 else 
+ if Priority_selector_23 == 2 and ( flip_greencounter_23 == MAX_flip_greencounter ) then diff_23 else 
+ if Priority_selector_22 == 2 and ( flip_greencounter_22 == MAX_flip_greencounter ) then diff_22 else 
+ if Priority_selector_21 == 2 and ( flip_greencounter_21 == MAX_flip_greencounter ) then diff_21 else 
+ if Priority_selector_20 == 2 and ( flip_greencounter_20 == MAX_flip_greencounter ) then diff_20 else 
+ if Priority_selector_19 == 2 and ( flip_greencounter_19 == MAX_flip_greencounter ) then diff_19 else 
+ if Priority_selector_18 == 2 and ( flip_greencounter_18 == MAX_flip_greencounter ) then diff_18 else 
+ if Priority_selector_17 == 2 and ( flip_greencounter_17 == MAX_flip_greencounter ) then diff_17 else 
+ if Priority_selector_16 == 2 and ( flip_greencounter_16 == MAX_flip_greencounter ) then diff_16 else 
+ if Priority_selector_15 == 2 and ( flip_greencounter_15 == MAX_flip_greencounter ) then diff_15 else 
+ if Priority_selector_14 == 2 and ( flip_greencounter_14 == MAX_flip_greencounter ) then diff_14 else 
+ if Priority_selector_13 == 2 and ( flip_greencounter_13 == MAX_flip_greencounter ) then diff_13 else 
+ if Priority_selector_12 == 2 and ( flip_greencounter_12 == MAX_flip_greencounter ) then diff_12 else 
+ if Priority_selector_11 == 2 and ( flip_greencounter_11 == MAX_flip_greencounter ) then diff_11 else 
+ if Priority_selector_10 == 2 and ( flip_greencounter_10 == MAX_flip_greencounter ) then diff_10 else 
+ if Priority_selector_9 == 2 and ( flip_greencounter_9 == MAX_flip_greencounter ) then diff_9 else 
+ if Priority_selector_8 == 2 and ( flip_greencounter_8 == MAX_flip_greencounter ) then diff_8 else 
+ if Priority_selector_7 == 2 and ( flip_greencounter_7 == MAX_flip_greencounter ) then diff_7 else 
+ if Priority_selector_6 == 2 and ( flip_greencounter_6 == MAX_flip_greencounter ) then diff_6 else 
+ if Priority_selector_5 == 2 and ( flip_greencounter_5 == MAX_flip_greencounter ) then diff_5 else 
+ if Priority_selector_4 == 2 and ( flip_greencounter_4 == MAX_flip_greencounter ) then diff_4 else 
+# if priority_selector_3 == 2 and ( flip_greencounter_3 == MAX_flip_greencounter ) then diff_3 else 
+# if priority_selector_2 == 2 and ( flip_greencounter_2 == MAX_flip_greencounter ) then diff_2 else 
+# if priority_selector_1 == 2 and ( flip_greencounter_1 == MAX_flip_greencounter ) then diff_1 else
+ 0) 
+else    staticdiff_down[1] ;
+def Entry_x = if ( trigger ) then x else Entry_x[1] ;
+def entry_bar_offset =  x - Entry_x  ;
+def Diff_selector =
+if GetValue (diff_28   , entry_bar_offset )   == staticdiff_down then diff_28 else
+if GetValue (diff_27   , entry_bar_offset )   == staticdiff_down then diff_27 else
+if GetValue (diff_26   , entry_bar_offset )   == staticdiff_down then diff_26 else
+if GetValue (diff_25   , entry_bar_offset )   == staticdiff_down then diff_25 else
+if GetValue (diff_24   , entry_bar_offset )   == staticdiff_down then diff_24 else
+if GetValue (diff_23   , entry_bar_offset )   == staticdiff_down then diff_23 else
+if GetValue (diff_22   , entry_bar_offset )   == staticdiff_down then diff_22 else
+if GetValue (diff_21   , entry_bar_offset )   == staticdiff_down then diff_21 else
+if GetValue (diff_20   , entry_bar_offset )   == staticdiff_down then diff_20 else
+if GetValue (diff_19   , entry_bar_offset )   == staticdiff_down then diff_19 else
+if GetValue (diff_18   , entry_bar_offset )   == staticdiff_down then diff_18 else
+if GetValue (diff_17   , entry_bar_offset )   == staticdiff_down then diff_17 else
+if GetValue (diff_16   , entry_bar_offset )   == staticdiff_down then diff_16 else
+if GetValue (diff_15   , entry_bar_offset )   == staticdiff_down then diff_15 else
+if GetValue (diff_14   , entry_bar_offset )   == staticdiff_down then diff_14 else
+if GetValue (diff_13   , entry_bar_offset )   == staticdiff_down then diff_13 else
+if GetValue (diff_12   , entry_bar_offset )   == staticdiff_down then diff_12 else
+if GetValue (diff_11   , entry_bar_offset )   == staticdiff_down then diff_11 else
+if GetValue (diff_10   , entry_bar_offset )   == staticdiff_down then diff_10 else
+if GetValue (diff_9   , entry_bar_offset )   == staticdiff_down then diff_9 else
+if GetValue (diff_8   , entry_bar_offset )   == staticdiff_down then diff_8 else
+if GetValue (diff_7   , entry_bar_offset )   == staticdiff_down then diff_7 else
+if GetValue (diff_6   , entry_bar_offset )   == staticdiff_down then diff_6 else
+if GetValue (diff_5   , entry_bar_offset )   == staticdiff_down then diff_5 else
+if GetValue (diff_4   , entry_bar_offset )   == staticdiff_down then diff_4 else 0 ;
+#if GetValue (Diff_3   , entry_bar_offset )   == staticdiff_down then Diff_3 else
+#if GetValue (Diff_2   , entry_bar_offset )   == staticdiff_down then Diff_2 else
+#if GetValue (Diff_1   , entry_bar_offset )   == staticdiff_down then Diff_1 else 0 ;
+def Signalnumber_1 = GetValue (Priority_selector_1 ,  entry_bar_offset);
+def Signalnumber_2 = GetValue (Priority_selector_2 ,  entry_bar_offset);
+def Signalnumber_3 = GetValue (Priority_selector_3 ,  entry_bar_offset);
+def Signalnumber_4 = GetValue (Priority_selector_4 ,  entry_bar_offset);
+def Signalnumber_5 = GetValue (Priority_selector_5 ,  entry_bar_offset);
+def Signalnumber_6 = GetValue (Priority_selector_6 ,  entry_bar_offset);
+def Signalnumber_7 = GetValue (Priority_selector_7 ,  entry_bar_offset);
+def Signalnumber_8 = GetValue (Priority_selector_8 ,  entry_bar_offset);
+def Signalnumber_9 = GetValue (Priority_selector_9 ,  entry_bar_offset);
+def Signalnumber_10 = GetValue (Priority_selector_10 ,  entry_bar_offset);
+def Signalnumber_11 = GetValue (Priority_selector_11 ,  entry_bar_offset);
+def Signalnumber_12 = GetValue (Priority_selector_12 ,  entry_bar_offset);
+def Signalnumber_13 = GetValue (Priority_selector_13 ,  entry_bar_offset);
+def Signalnumber_14 = GetValue (Priority_selector_14 ,  entry_bar_offset);
+def Signalnumber_15 = GetValue (Priority_selector_15 ,  entry_bar_offset);
+def Signalnumber_16 = GetValue (Priority_selector_16 ,  entry_bar_offset);
+def Signalnumber_17 = GetValue (Priority_selector_17 ,  entry_bar_offset);
+def Signalnumber_18 = GetValue (Priority_selector_18 ,  entry_bar_offset);
+def Signalnumber_19 = GetValue (Priority_selector_19 ,  entry_bar_offset);
+def Signalnumber_20 = GetValue (Priority_selector_20 ,  entry_bar_offset);
+def Signalnumber_21 = GetValue (Priority_selector_21 ,  entry_bar_offset);
+def Signalnumber_22 = GetValue (Priority_selector_22 ,  entry_bar_offset);
+def Signalnumber_23 = GetValue (Priority_selector_23 ,  entry_bar_offset);
+def Signalnumber_24 = GetValue (Priority_selector_24 ,  entry_bar_offset);
+def Signalnumber_25 = GetValue (Priority_selector_25 ,  entry_bar_offset);
+def Signalnumber_26 = GetValue (Priority_selector_26 ,  entry_bar_offset);
+def Signalnumber_27 = GetValue (Priority_selector_27 ,  entry_bar_offset);
+def Signalnumber_28 = GetValue (Priority_selector_28 ,  entry_bar_offset);
+###################################### STOPS 
+def W2WSIGNAL =   if
+(
+# Signalnumber_1 == 5 or 
+# Signalnumber_2 == 5 or 
+# Signalnumber_3 == 5 or 
+ Signalnumber_4 == 5 or 
+ Signalnumber_5 == 5 or 
+ Signalnumber_6 == 5 or 
+ Signalnumber_7 == 5 or 
+ Signalnumber_8 == 5 or 
+ Signalnumber_9 == 5 or 
+ Signalnumber_10 == 5 or 
+ Signalnumber_11 == 5 or 
+ Signalnumber_12 == 5 or 
+ Signalnumber_13 == 5 or 
+ Signalnumber_14 == 5 or 
+ Signalnumber_15 == 5 or 
+ Signalnumber_16 == 5 or 
+ Signalnumber_17 == 5 or 
+ Signalnumber_18 == 5 or 
+ Signalnumber_19 == 5 or 
+ Signalnumber_20 == 5 or 
+ Signalnumber_21 == 5 or 
+ Signalnumber_22 == 5 or 
+ Signalnumber_23 == 5 or 
+ Signalnumber_24 == 5 or 
+ Signalnumber_25 == 5 or 
+ Signalnumber_26 == 5 or 
+ Signalnumber_27 == 5 or 
+ Signalnumber_28 == 5  
+)
+ then 100000 else 0
+   ;
+def W2FSIGNAL =  if  ( 
+# Signalnumber_1 == 4 or 
+# Signalnumber_2 == 4 or 
+# Signalnumber_3 == 4 or 
+ Signalnumber_4 == 4 or 
+ Signalnumber_5 == 4 or 
+ Signalnumber_6 == 4 or 
+ Signalnumber_7 == 4 or 
+ Signalnumber_8 == 4 or 
+ Signalnumber_9 == 4 or 
+ Signalnumber_10 == 4 or 
+ Signalnumber_11 == 4 or 
+ Signalnumber_12 == 4 or 
+ Signalnumber_13 == 4 or 
+ Signalnumber_14 == 4 or 
+ Signalnumber_15 == 4 or 
+ Signalnumber_16 == 4 or 
+ Signalnumber_17 == 4 or 
+ Signalnumber_18 == 4 or 
+ Signalnumber_19 == 4 or 
+ Signalnumber_20 == 4 or 
+ Signalnumber_21 == 4 or 
+ Signalnumber_22 == 4 or 
+ Signalnumber_23 == 4 or 
+ Signalnumber_24 == 4 or 
+ Signalnumber_25 == 4 or 
+ Signalnumber_26 == 4 or 
+ Signalnumber_27 == 4 or 
+ Signalnumber_28 == 4  
+ )  then 10000 else 0
+   ;
+def W2SSIGNAL = if   ( 
+# Signalnumber_1 == 3 or 
+# Signalnumber_2 == 3 or 
+# Signalnumber_3 == 3 or 
+ Signalnumber_4 == 3 or 
+ Signalnumber_5 == 3 or 
+ Signalnumber_6 == 3 or 
+ Signalnumber_7 == 3 or 
+ Signalnumber_8 == 3 or 
+ Signalnumber_9 == 3 or 
+ Signalnumber_10 == 3 or 
+ Signalnumber_11 == 3 or 
+ Signalnumber_12 == 3 or 
+ Signalnumber_13 == 3 or 
+ Signalnumber_14 == 3 or 
+ Signalnumber_15 == 3 or 
+ Signalnumber_16 == 3 or 
+ Signalnumber_17 == 3 or 
+ Signalnumber_18 == 3 or 
+ Signalnumber_19 == 3 or 
+ Signalnumber_20 == 3 or 
+ Signalnumber_21 == 3 or 
+ Signalnumber_22 == 3 or 
+ Signalnumber_23 == 3 or 
+ Signalnumber_24 == 3 or 
+ Signalnumber_25 == 3 or 
+ Signalnumber_26 == 3 or 
+ Signalnumber_27 == 3 or 
+ Signalnumber_28 == 3  
+ )  then 1000 else 0
+   ;
+def FSIGNAL =   if ( 
+# Signalnumber_1 == 2 or 
+# Signalnumber_2 == 2 or 
+# Signalnumber_3 == 2 or 
+ Signalnumber_4 == 2 or 
+ Signalnumber_5 == 2 or 
+ Signalnumber_6 == 2 or 
+ Signalnumber_7 == 2 or 
+ Signalnumber_8 == 2 or 
+ Signalnumber_9 == 2 or 
+ Signalnumber_10 == 2 or 
+ Signalnumber_11 == 2 or 
+ Signalnumber_12 == 2 or 
+ Signalnumber_13 == 2 or 
+ Signalnumber_14 == 2 or 
+ Signalnumber_15 == 2 or 
+ Signalnumber_16 == 2 or 
+ Signalnumber_17 == 2 or 
+ Signalnumber_18 == 2 or 
+ Signalnumber_19 == 2 or 
+ Signalnumber_20 == 2 or 
+ Signalnumber_21 == 2 or 
+ Signalnumber_22 == 2 or 
+ Signalnumber_23 == 2 or 
+ Signalnumber_24 == 2 or 
+ Signalnumber_25 == 2 or 
+ Signalnumber_26 == 2 or 
+ Signalnumber_27 == 2 or 
+ Signalnumber_28 == 2)
+ then 100 else 0
+   ;
+def W_S_SIGNAL =  if  ( 
+# Signalnumber_1 == 1 or 
+# Signalnumber_2 == 1 or 
+# Signalnumber_3 == 1 or 
+ Signalnumber_4 == 1 or 
+ Signalnumber_5 == 1 or 
+ Signalnumber_6 == 1 or 
+ Signalnumber_7 == 1 or 
+ Signalnumber_8 == 1 or 
+ Signalnumber_9 == 1 or 
+ Signalnumber_10 == 1 or 
+ Signalnumber_11 == 1 or 
+ Signalnumber_12 == 1 or 
+ Signalnumber_13 == 1 or 
+ Signalnumber_14 == 1 or 
+ Signalnumber_15 == 1 or 
+ Signalnumber_16 == 1 or 
+ Signalnumber_17 == 1 or 
+ Signalnumber_18 == 1 or 
+ Signalnumber_19 == 1 or 
+ Signalnumber_20 == 1 or 
+ Signalnumber_21 == 1 or 
+ Signalnumber_22 == 1 or 
+ Signalnumber_23 == 1 or 
+ Signalnumber_24 == 1 or 
+ Signalnumber_25 == 1 or 
+ Signalnumber_26 == 1 or 
+ Signalnumber_27 == 1 or 
+ Signalnumber_28 == 1 ) 
+ then 10 else 0
+   ;
+def W_W_SIGNAL =  if  ( 
+# Signalnumber_1 == 0 or 
+# Signalnumber_2 == 0 or 
+# Signalnumber_3 == 0 or 
+ Signalnumber_4 == 0 or 
+ Signalnumber_5 == 0 or 
+ Signalnumber_6 == 0 or 
+ Signalnumber_7 == 0 or 
+ Signalnumber_8 == 0 or 
+ Signalnumber_9 == 0 or 
+ Signalnumber_10 == 0 or 
+ Signalnumber_11 == 0 or 
+ Signalnumber_12 == 0 or 
+ Signalnumber_13 == 0 or 
+ Signalnumber_14 == 0 or 
+ Signalnumber_15 == 0 or 
+ Signalnumber_16 == 0 or 
+ Signalnumber_17 == 0 or 
+ Signalnumber_18 == 0 or 
+ Signalnumber_19 == 0 or 
+ Signalnumber_20 == 0 or 
+ Signalnumber_21 == 0 or 
+ Signalnumber_22 == 0 or 
+ Signalnumber_23 == 0 or 
+ Signalnumber_24 == 0 or 
+ Signalnumber_25 == 0 or 
+ Signalnumber_26 == 0 or 
+ Signalnumber_27 == 0 or 
+ Signalnumber_28 == 0)
+ then .01 else 0
+   ;
+def tcross_stop =    if ( trigger ) then high else tcross_stop[1] ;
+def signaltotal =   W2WSIGNAL  + W2FSIGNAL  + W2SSIGNAL  + FSIGNAL   + W_S_SIGNAL   + W_W_SIGNAL  ;
+def stop =     
+if trigger is true  then tcross_stop else 
+if signaltotal >= 100000 then    
+ if (Signalnumber_1 >= 5  ) and  ( W_W_1 ) then high else 
+ if (Signalnumber_2 >= 5  ) and  ( W_W_2 ) then high else 
+ if (Signalnumber_3 >= 5  ) and  ( W_W_3 ) then high else 
+ if (Signalnumber_4 >= 5  ) and  ( W_W_4 ) then high else 
+ if (Signalnumber_5 >= 5  ) and  ( W_W_5 ) then high else 
+ if (Signalnumber_6 >= 5  ) and  ( W_W_6 ) then high else 
+ if (Signalnumber_7 >= 5  ) and  ( W_W_7 ) then high else 
+ if (Signalnumber_8 >= 5  ) and  ( W_W_8 ) then high else 
+ if (Signalnumber_9 >= 5  ) and  ( W_W_9 ) then high else 
+ if (Signalnumber_10 >= 5  ) and  ( W_W_10 ) then high else 
+ if (Signalnumber_11 >= 5  ) and  ( W_W_11 ) then high else 
+ if (Signalnumber_12 >= 5  ) and  ( W_W_12 ) then high else 
+ if (Signalnumber_13 >= 5  ) and  ( W_W_13 ) then high else 
+ if (Signalnumber_14 >= 5  ) and  ( W_W_14 ) then high else 
+ if (Signalnumber_15 >= 5  ) and  ( W_W_15 ) then high else 
+ if (Signalnumber_16 >= 5  ) and  ( W_W_16 ) then high else 
+ if (Signalnumber_17 >= 5  ) and  ( W_W_17 ) then high else 
+ if (Signalnumber_18 >= 5  ) and  ( W_W_18 ) then high else 
+ if (Signalnumber_19 >= 5  ) and  ( W_W_19 ) then high else 
+ if (Signalnumber_20 >= 5  ) and  ( W_W_20 ) then high else 
+ if (Signalnumber_21 >= 5  ) and  ( W_W_21 ) then high else 
+ if (Signalnumber_22 >= 5  ) and  ( W_W_22 ) then high else 
+ if (Signalnumber_23 >= 5  ) and  ( W_W_23 ) then high else 
+ if (Signalnumber_24 >= 5  ) and  ( W_W_24 ) then high else 
+ if (Signalnumber_25 >= 5  ) and  ( W_W_25 ) then high else 
+ if (Signalnumber_26 >= 5  ) and  ( W_W_26 ) then high else 
+ if (Signalnumber_27 >= 5  ) and  ( W_W_27 ) then high else 
+ if (Signalnumber_28 >= 5  ) and  ( W_W_28 ) then high else 
+ 
+stop[1]  else    
+ 
+if ( ( 100000 > signaltotal )   and ( signaltotal >= 10000 ) )   then  
+ if (Signalnumber_1 >= 4 ) and  ( W_W_1 ) then high else 
+ if (Signalnumber_2 >= 4 ) and  ( W_W_2 ) then high else 
+ if (Signalnumber_3 >= 4 ) and  ( W_W_3 ) then high else 
+ if (Signalnumber_4 >= 4 ) and  ( W_W_4 ) then high else 
+ if (Signalnumber_5 >= 4 ) and  ( W_W_5 ) then high else 
+ if (Signalnumber_6 >= 4 ) and  ( W_W_6 ) then high else 
+ if (Signalnumber_7 >= 4 ) and  ( W_W_7 ) then high else 
+ if (Signalnumber_8 >= 4 ) and  ( W_W_8 ) then high else 
+ if (Signalnumber_9 >= 4 ) and  ( W_W_9 ) then high else 
+ if (Signalnumber_10 >= 4 ) and  ( W_W_10 ) then high else 
+ if (Signalnumber_11 >= 4 ) and  ( W_W_11 ) then high else 
+ if (Signalnumber_12 >= 4 ) and  ( W_W_12 ) then high else 
+ if (Signalnumber_13 >= 4 ) and  ( W_W_13 ) then high else 
+ if (Signalnumber_14 >= 4 ) and  ( W_W_14 ) then high else 
+ if (Signalnumber_15 >= 4 ) and  ( W_W_15 ) then high else 
+ if (Signalnumber_16 >= 4 ) and  ( W_W_16 ) then high else 
+ if (Signalnumber_17 >= 4 ) and  ( W_W_17 ) then high else 
+ if (Signalnumber_18 >= 4 ) and  ( W_W_18 ) then high else 
+ if (Signalnumber_19 >= 4 ) and  ( W_W_19 ) then high else 
+ if (Signalnumber_20 >= 4 ) and  ( W_W_20 ) then high else 
+ if (Signalnumber_21 >= 4 ) and  ( W_W_21 ) then high else 
+ if (Signalnumber_22 >= 4 ) and  ( W_W_22 ) then high else 
+ if (Signalnumber_23 >= 4 ) and  ( W_W_23 ) then high else 
+ if (Signalnumber_24 >= 4 ) and  ( W_W_24 ) then high else 
+ if (Signalnumber_25 >= 4 ) and  ( W_W_25 ) then high else 
+ if (Signalnumber_26 >= 4 ) and  ( W_W_26 ) then high else 
+ if (Signalnumber_27 >= 4 ) and  ( W_W_27 ) then high else 
+ if (Signalnumber_28 >= 4 ) and  ( W_W_28 ) then high else 
+stop[1]  else   
+if  (( 10000 > signaltotal )   and ( signaltotal >= 1000 )) then  
+ if (Signalnumber_1 >= 3 ) and  ( W_W_1 ) then high else 
+ if (Signalnumber_2 >= 3 ) and  ( W_W_2 ) then high else 
+ if (Signalnumber_3 >= 3 ) and  ( W_W_3 ) then high else 
+ if (Signalnumber_4 >= 3 ) and  ( W_W_4 ) then high else 
+ if (Signalnumber_5 >= 3 ) and  ( W_W_5 ) then high else 
+ if (Signalnumber_6 >= 3 ) and  ( W_W_6 ) then high else 
+ if (Signalnumber_7 >= 3 ) and  ( W_W_7 ) then high else 
+ if (Signalnumber_8 >= 3 ) and  ( W_W_8 ) then high else 
+ if (Signalnumber_9 >= 3 ) and  ( W_W_9 ) then high else 
+ if (Signalnumber_10 >= 3 ) and  ( W_W_10 ) then high else 
+ if (Signalnumber_11 >= 3 ) and  ( W_W_11 ) then high else 
+ if (Signalnumber_12 >= 3 ) and  ( W_W_12 ) then high else 
+ if (Signalnumber_13 >= 3 ) and  ( W_W_13 ) then high else 
+ if (Signalnumber_14 >= 3 ) and  ( W_W_14 ) then high else 
+ if (Signalnumber_15 >= 3 ) and  ( W_W_15 ) then high else 
+ if (Signalnumber_16 >= 3 ) and  ( W_W_16 ) then high else 
+ if (Signalnumber_17 >= 3 ) and  ( W_W_17 ) then high else 
+ if (Signalnumber_18 >= 3 ) and  ( W_W_18 ) then high else 
+ if (Signalnumber_19 >= 3 ) and  ( W_W_19 ) then high else 
+ if (Signalnumber_20 >= 3 ) and  ( W_W_20 ) then high else 
+ if (Signalnumber_21 >= 3 ) and  ( W_W_21 ) then high else 
+ if (Signalnumber_22 >= 3 ) and  ( W_W_22 ) then high else 
+ if (Signalnumber_23 >= 3 ) and  ( W_W_23 ) then high else 
+ if (Signalnumber_24 >= 3 ) and  ( W_W_24 ) then high else 
+ if (Signalnumber_25 >= 3 ) and  ( W_W_25 ) then high else 
+ if (Signalnumber_26 >= 3 ) and  ( W_W_26 ) then high else 
+ if (Signalnumber_27 >= 3 ) and  ( W_W_27 ) then high else 
+ if (Signalnumber_28 >= 3 ) and  ( W_W_28 ) then high else 
+stop[1]  else  
+if  (( 1000 > signaltotal )   and ( signaltotal >= 100 )) then
+ if (Signalnumber_1 >= 2  ) and  ( W_W_1 ) then high else 
+ if (Signalnumber_2 >= 2  ) and  ( W_W_2 ) then high else 
+ if (Signalnumber_3 >= 2  ) and  ( W_W_3 ) then high else 
+ if (Signalnumber_4 >= 2  ) and  ( W_W_4 ) then high else 
+ if (Signalnumber_5 >= 2  ) and  ( W_W_5 ) then high else 
+ if (Signalnumber_6 >= 2  ) and  ( W_W_6 ) then high else 
+ if (Signalnumber_7 >= 2  ) and  ( W_W_7 ) then high else 
+ if (Signalnumber_8 >= 2  ) and  ( W_W_8 ) then high else 
+ if (Signalnumber_9 >= 2  ) and  ( W_W_9 ) then high else 
+ if (Signalnumber_10 >= 2  ) and  ( W_W_10 ) then high else 
+ if (Signalnumber_11 >= 2  ) and  ( W_W_11 ) then high else 
+ if (Signalnumber_12 >= 2  ) and  ( W_W_12 ) then high else 
+ if (Signalnumber_13 >= 2  ) and  ( W_W_13 ) then high else 
+ if (Signalnumber_14 >= 2  ) and  ( W_W_14 ) then high else 
+ if (Signalnumber_15 >= 2  ) and  ( W_W_15 ) then high else 
+ if (Signalnumber_16 >= 2  ) and  ( W_W_16 ) then high else 
+ if (Signalnumber_17 >= 2  ) and  ( W_W_17 ) then high else 
+ if (Signalnumber_18 >= 2  ) and  ( W_W_18 ) then high else 
+ if (Signalnumber_19 >= 2  ) and  ( W_W_19 ) then high else 
+ if (Signalnumber_20 >= 2  ) and  ( W_W_20 ) then high else 
+ if (Signalnumber_21 >= 2  ) and  ( W_W_21 ) then high else 
+ if (Signalnumber_22 >= 2  ) and  ( W_W_22 ) then high else 
+ if (Signalnumber_23 >= 2  ) and  ( W_W_23 ) then high else 
+ if (Signalnumber_24 >= 2  ) and  ( W_W_24 ) then high else 
+ if (Signalnumber_25 >= 2  ) and  ( W_W_25 ) then high else 
+ if (Signalnumber_26 >= 2  ) and  ( W_W_26 ) then high else 
+ if (Signalnumber_27 >= 2  ) and  ( W_W_27 ) then high else 
+ if (Signalnumber_28 >= 2  ) and  ( W_W_28 ) then high else 
+stop[1]  else 
+if  (( 100 > signaltotal )  and ( signaltotal >= 10 )) then
+ if (Signalnumber_1 >= 1  ) and  ( W_W_1 ) then high else 
+ if (Signalnumber_2 >= 1  ) and  ( W_W_2 ) then high else 
+ if (Signalnumber_3 >= 1  ) and  ( W_W_3 ) then high else 
+ if (Signalnumber_4 >= 1  ) and  ( W_W_4 ) then high else 
+ if (Signalnumber_5 >= 1  ) and  ( W_W_5 ) then high else 
+ if (Signalnumber_6 >= 1  ) and  ( W_W_6 ) then high else 
+ if (Signalnumber_7 >= 1  ) and  ( W_W_7 ) then high else 
+ if (Signalnumber_8 >= 1  ) and  ( W_W_8 ) then high else 
+ if (Signalnumber_9 >= 1  ) and  ( W_W_9 ) then high else 
+ if (Signalnumber_10 >= 1  ) and  ( W_W_10 ) then high else 
+ if (Signalnumber_11 >= 1  ) and  ( W_W_11 ) then high else 
+ if (Signalnumber_12 >= 1  ) and  ( W_W_12 ) then high else 
+ if (Signalnumber_13 >= 1  ) and  ( W_W_13 ) then high else 
+ if (Signalnumber_14 >= 1  ) and  ( W_W_14 ) then high else 
+ if (Signalnumber_15 >= 1  ) and  ( W_W_15 ) then high else 
+ if (Signalnumber_16 >= 1  ) and  ( W_W_16 ) then high else 
+ if (Signalnumber_17 >= 1  ) and  ( W_W_17 ) then high else 
+ if (Signalnumber_18 >= 1  ) and  ( W_W_18 ) then high else 
+ if (Signalnumber_19 >= 1  ) and  ( W_W_19 ) then high else 
+ if (Signalnumber_20 >= 1  ) and  ( W_W_20 ) then high else 
+ if (Signalnumber_21 >= 1  ) and  ( W_W_21 ) then high else 
+ if (Signalnumber_22 >= 1  ) and  ( W_W_22 ) then high else 
+ if (Signalnumber_23 >= 1  ) and  ( W_W_23 ) then high else 
+ if (Signalnumber_24 >= 1  ) and  ( W_W_24 ) then high else 
+ if (Signalnumber_25 >= 1  ) and  ( W_W_25 ) then high else 
+ if (Signalnumber_26 >= 1  ) and  ( W_W_26 ) then high else 
+ if (Signalnumber_27 >= 1  ) and  ( W_W_27 ) then high else 
+ if (Signalnumber_28 >= 1  ) and  ( W_W_28 ) then high else 
+stop[1]  else  
+if (( 10 > signaltotal )   and ( signaltotal >=  .01 )) then
+ if (Signalnumber_1 >= 0  ) and  ( W_W_1 ) then high else 
+ if (Signalnumber_2 >= 0  ) and  ( W_W_2 ) then high else 
+ if (Signalnumber_3 >= 0  ) and  ( W_W_3 ) then high else 
+ if (Signalnumber_4 >= 0  ) and  ( W_W_4 ) then high else 
+ if (Signalnumber_5 >= 0  ) and  ( W_W_5 ) then high else 
+ if (Signalnumber_6 >= 0  ) and  ( W_W_6 ) then high else 
+ if (Signalnumber_7 >= 0  ) and  ( W_W_7 ) then high else 
+ if (Signalnumber_8 >= 0  ) and  ( W_W_8 ) then high else 
+ if (Signalnumber_9 >= 0  ) and  ( W_W_9 ) then high else 
+ if (Signalnumber_10 >= 0  ) and  ( W_W_10 ) then high else 
+ if (Signalnumber_11 >= 0  ) and  ( W_W_11 ) then high else 
+ if (Signalnumber_12 >= 0  ) and  ( W_W_12 ) then high else 
+ if (Signalnumber_13 >= 0  ) and  ( W_W_13 ) then high else 
+ if (Signalnumber_14 >= 0  ) and  ( W_W_14 ) then high else 
+ if (Signalnumber_15 >= 0  ) and  ( W_W_15 ) then high else 
+ if (Signalnumber_16 >= 0  ) and  ( W_W_16 ) then high else 
+ if (Signalnumber_17 >= 0  ) and  ( W_W_17 ) then high else 
+ if (Signalnumber_18 >= 0  ) and  ( W_W_18 ) then high else 
+ if (Signalnumber_19 >= 0  ) and  ( W_W_19 ) then high else 
+ if (Signalnumber_20 >= 0  ) and  ( W_W_20 ) then high else 
+ if (Signalnumber_21 >= 0  ) and  ( W_W_21 ) then high else 
+ if (Signalnumber_22 >= 0  ) and  ( W_W_22 ) then high else 
+ if (Signalnumber_23 >= 0  ) and  ( W_W_23 ) then high else 
+ if (Signalnumber_24 >= 0  ) and  ( W_W_24 ) then high else 
+ if (Signalnumber_25 >= 0  ) and  ( W_W_25 ) then high else 
+ if (Signalnumber_26 >= 0  ) and  ( W_W_26 ) then high else 
+ if (Signalnumber_27 >= 0  ) and  ( W_W_27 ) then high else 
+ if (Signalnumber_28 >= 0  ) and  ( W_W_28 ) then high else stop [1]
+else stop [1]  ;
+#else  hh_1  ;
+def QTY = GetQuantity()  ;
+def position_neg =  (GetQuantity()  <  0  )  ;
+def position_POS =  (GetQuantity()  >  0  )  ;
+def short_entries = upMACDabe or upABEmacd or pressuredown or (uphalf or downhalf) 
+                     or pressureup;
+;
+#def shade_counter = if trigger then 0 
+#                               else if ((Diff_selector[2] > Diff_selector[1]) and ( Diff_selector > Diff_selector[1])) then ( shade_counter[1] + 1 ) 
+#                                                                                                                       else  shade_counter[1] ;
+def diff_selector_trigger_seperator = if (QTY[1] == 0 and position_neg is true) then 1 else  Diff_selector ;
+def shade_counter = if trigger then 0 
+                               else if (
+                                            ( (Diff_selector[2] > Diff_selector[1]) and ( Diff_selector > Diff_selector[1]) ) 
+                                         or (   ( position_neg[1] is false) and  ( Diff_selector > Diff_selector[1] )  )    # enabled counting first shade before a strength directly after entry!!!!!
+                                         or (   ( W2WSIGNAL <> 100000) and  ( Diff_selector > Diff_selector[1] )  )  
+                                        )
+                                     then ( shade_counter[1] + 1 ) 
+                                     else  shade_counter[1] ;
+def entry_counter = 
+if (position_neg[2] is false and position_neg[1] is false) then 0 
+                                                   else if trigger then 3
+                                                                   else if short_entries then ( entry_counter[1] + 1 ) 
+                                                                   else  entry_counter[1] ;
+def EXIT_double_entry = 
+if entry_counter == 2 then 1   else 0;
+def Exit_Squeeze = if (position_neg and  squeeze) is true then 1 else 0 ;
+def EXIT_DIFF = 
+if W2WSIGNAL == 100000 then if shade_counter == 2 then 1 
+                                                  else 0
+                       else if  shade_counter == 1 then 1 
+                                                                 else 0 ;
+def EXIT =   (  position_neg and (
+                                   ( (EXIT_DIFF == 1) or (Exit_Squeeze == 1) ) and close < tline        #removed [1] from close and tline
+                                 )
+                                or ( ( EXIT_double_entry == 1) and close > tline )
+             ) ;
+#         or (position_pos and position_pos[3] and ( (abes1 < 0) and (abes2<0) )  )  ;
+#AddLabel( 1,  if EXIT is true  then "CLOSE" else "" , if EXIT is true then color.RED else color.current);
+def EXTbar =  IsNaN(close[-10]) ; 
+#addlabel ( 1, signaltotal ) ; 
+#addlabel ( 1,  if  (( 10000 > signaltotal ) and ( signaltotal >= 1000 )) then "yes" else "n" ) ; 
+#addlabel ( 1,  if  signalnumber_10 >= 3 then  if (diff_10 > diff_10 [1] ) then high else  then "yes" else "n" ) ;
+def drawstop = 
+if stop > stop[1] then Double.NaN else
+if high > stop  then Double.NaN else
+#if EXTBAR  then stop else 
+stop ;   
+#plot STOP_Values =   drawstop; STOP_Values.SetPaintingStrategy(PaintingStrategy.VALUES_ABOVE);STOP_Values.setDefaultColor(color.white);
+plot STOP_Values = if stop == stop[1] then Double.NaN else if EXTbar then drawstop else Double.NaN;
+;
+STOP_Values.SetPaintingStrategy(PaintingStrategy.VALUES_ABOVE);
+STOP_Values.SetDefaultColor(Color.WHITE);
+plot STOP_Lines =
+if EXTbar then drawstop else Double.NaN;
+STOP_Lines.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+STOP_Lines.SetDefaultColor(Color.WHITE);
+def lastbar = IsNaN(close[-3]) ;
+plot EXITSIGNAL =  
+if   (GetQuantity()[1] == 0  )  then Double.NaN else 
+ if lastbar is true then if 
+(EXIT is true) or (EXIT[-1] is true)  or (EXIT[-2] is true) 
+then LIVE_peak_high * 1.07  
+else Double.NaN else Double.NaN  ;
+EXITSIGNAL.SetPaintingStrategy(PaintingStrategy.SQUARED_HISTOGRAM);
+EXITSIGNAL.SetDefaultColor(Color.YELLOW);
+#AddChartBubble (  (GetQuantity()[1] <> 0  )  and  lastbar is true,  if isnan(drawstop) then double.nan else drawstop , if (  (GetQuantity() <> 0 is true)   and  exit is true ) then "CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE " else ("" + drawstop) , if exit is true then color.orange else color.yellow , yes);
+#AddChartBubble ( (GetQuantity()[1] <> 0  )  and  lastbar is true , if exit is true then low else double.nan, if (  (GetQuantity() <> 0 is true)   and  exit is true ) then "CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE " else ("" ) , if exit is true then color.orange else color.current, no);
+#AddChartBubble (  (GetQuantity()[1] <> 0  )  and  lastbar is true 
+#and     (position)   
+#and  exit is true  ,   high ,   "CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE "   , if exit is true then color.orange else color.yellow , yes);
+AddChartBubble (  (GetQuantity()[1] <> 0  )  and  lastbar is true 
+and    (position_neg)   
+and  EXIT is true  ,    low  ,  "CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE "   , if EXIT is true then Color.ORANGE else Color.YELLOW , no);
+#AddChartBubble ( lastbar is true, if exit is true then high else double.nan, if exit is true then "CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE CLOSE " else ("" ) , if exit is true then color.orange else color.current, yes);
+#AddChartBubble ( lastbar is true, drawstop ,   stop  ,   color.yellow , yes);
+#def hiLevel = if lastbar is true then if exit is true then Double.POSITIVE_INFINITY else Double.negative_INFINITY else double.nan;;AddCloud(hiLevel, -hiLevel, Color.red, Color.current);
+ #  hh_1  secondaryHselector h ?
+
+ 
+    
+ 
+#this version added thes ouble entry exit , and changed the exit close<tline to current day not previous 
+
+
+
+
+plot LONG = if LONGsignal is true  then low else Double.NaN ;
+plot SHORT = if SHORTsignal   is true then low  else Double.NaN ;
+plot extlong = if extLONGsignal or extLONGsignal1 or extLONGsignal2 is true  then low else Double.NaN ;
+plot extshort = if extSHORTsignal or extSHORTsignal1 or extSHORTsignal2 is true  then low else Double.NaN ;  
+#red.enableApproximation () ;
+#red.enableApproximation () ;
+plot revLONG = if REVLONGsignal is true  then low else Double.NaN ;
+plot revSHORT = if REVSHORTsignal   is true then low  else Double.NaN ;
+plot REVextlong = if REVextLONGsignal or REVextLONGsignal1 or REVextLONGsignal2 is true  then low else Double.NaN ;
+
+
+
+#########################################################################################################################
+LowerBand.SetPaintingStrategy(PaintingStrategy.LINE);
+LowerBand.SetStyle(Curve.LONG_DASH);
+LowerBand.SetLineWeight(1);
+LowerBand.SetDefaultColor(CreateColor(234, 136, 255));
+UpperBand.SetPaintingStrategy(PaintingStrategy.LINE);
+UpperBand.SetStyle(Curve.LONG_DASH);
+UpperBand.SetLineWeight(1);
+UpperBand.SetDefaultColor(CreateColor(234, 136, 255));
+LONG.SetPaintingStrategy(PaintingStrategy.LINE);
+LONG.SetStyle(Curve.FIRM);
+LONG.SetLineWeight(1);
+LONG.SetDefaultColor(CreateColor(255, 0, 0));
+tline.SetPaintingStrategy(PaintingStrategy.LINE);
+tline.SetStyle(Curve.FIRM);
+tline.SetLineWeight(2);
+tline.SetDefaultColor(CreateColor(231, 190, 0));
+PEAK_HIGH1_PLOT.SetPaintingStrategy(PaintingStrategy.LINE);
+PEAK_HIGH1_PLOT.SetStyle(Curve.MEDIUM_DASH);
+PEAK_HIGH1_PLOT.SetLineWeight(4);
+PEAK_HIGH1_PLOT.SetDefaultColor(CreateColor(255, 0, 0));
+VALLEY_LOW1_PLOT.SetPaintingStrategy(PaintingStrategy.LINE);
+VALLEY_LOW1_PLOT.SetStyle(Curve.MEDIUM_DASH);
+VALLEY_LOW1_PLOT.SetLineWeight(4);
+VALLEY_LOW1_PLOT.SetDefaultColor(CreateColor(0, 197, 49));
+VALLEY_LOW_PLOT.SetPaintingStrategy(PaintingStrategy.LINE);
+VALLEY_LOW_PLOT.SetStyle(Curve.FIRM);
+VALLEY_LOW_PLOT.SetLineWeight(4);
+VALLEY_LOW_PLOT.SetDefaultColor(CreateColor(0, 197, 49));
+PEAK_HIGH_PLOT.SetPaintingStrategy(PaintingStrategy.LINE);
+PEAK_HIGH_PLOT.SetStyle(Curve.FIRM);
+PEAK_HIGH_PLOT.SetLineWeight(4);
+PEAK_HIGH_PLOT.SetDefaultColor(CreateColor(255, 0, 0));
+
+PeakToHigh_PLOT.SetPaintingStrategy(PaintingStrategy.LINE);
+PeakToHigh_PLOT.SetStyle(Curve.MEDIUM_DASH);
+PeakToHigh_PLOT.SetLineWeight(4);
+PeakToHigh_PLOT.SetDefaultColor(CreateColor(249, 233, 167));
+ValleyToLow_PLOT.SetPaintingStrategy(PaintingStrategy.LINE);
+ValleyToLow_PLOT.SetStyle(Curve.MEDIUM_DASH);
+ValleyToLow_PLOT.SetLineWeight(4);
+ValleyToLow_PLOT.SetDefaultColor(CreateColor(249, 233, 167));
+ValleyToLow_1_PLOT.SetPaintingStrategy(PaintingStrategy.LINE);
+ValleyToLow_1_PLOT.SetStyle(Curve.SHORT_DASH);
+ValleyToLow_1_PLOT.SetLineWeight(3);
+ValleyToLow_1_PLOT.SetDefaultColor(CreateColor(0, 197, 49));
+PeakToHigh_1_PLOT.SetPaintingStrategy(PaintingStrategy.LINE);
+PeakToHigh_1_PLOT.SetStyle(Curve.SHORT_DASH);
+PeakToHigh_1_PLOT.SetLineWeight(3);
+PeakToHigh_1_PLOT.SetDefaultColor(CreateColor(255, 0, 0));
+Peaktohigh1_1.SetPaintingStrategy(PaintingStrategy.LINE);
+Peaktohigh1_1.SetStyle(Curve.SHORT_DASH);
+Peaktohigh1_1.SetLineWeight(3);
+Peaktohigh1_1.SetDefaultColor(CreateColor(255, 0, 0));
+Valleytolow1_1_PLOT.SetPaintingStrategy(PaintingStrategy.LINE);
+Valleytolow1_1_PLOT.SetStyle(Curve.SHORT_DASH);
+Valleytolow1_1_PLOT.SetLineWeight(3);
+Valleytolow1_1_PLOT.SetDefaultColor(CreateColor(0, 197, 49)); 
+
+Upper_Band.SetPaintingStrategy(PaintingStrategy.LINE);
+Upper_Band.SetStyle(Curve.SHORT_DASH);
+Upper_Band.SetLineWeight(1);
+Upper_Band.SetDefaultColor(Color.WHITE);
+Lower_Band.SetPaintingStrategy(PaintingStrategy.LINE);
+Lower_Band.SetStyle(Curve.SHORT_DASH);
+Lower_Band.SetLineWeight(1);
+Lower_Band.SetDefaultColor(Color.WHITE);
+#STOPLINES.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+#STOPLINES.SetDefaultColor(CreateColor(0, 197, 49);
+TD_STOP_Lines.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+TD_STOP_Lines.SetDefaultColor(CreateColor(0, 197, 49));
+#BUSTOPLINES.SetPaintingStrategy(PaintingStrategy.VALUES_ABOVE);
+#BUSTOPLINES.SetDefaultColor(Color.WHITE);
+#STOPVALUES.SetPaintingStrategy(PaintingStrategy.VALUES_ABOVE);
+#STOPVALUES.SetDefaultColor(Color.WHITE);
+TD_STOP_Values.SetPaintingStrategy(PaintingStrategy.VALUES_ABOVE);
+TD_STOP_Values.SetDefaultColor(CreateColor(0, 197, 49));
+Tline_H.SetPaintingStrategy(PaintingStrategy.LINE);
+Tline_H.SetStyle(Curve.FIRM);
+Tline_H.SetLineWeight(1);
+Tline_H.SetDefaultColor(Color.GRAY);
+extlong.SetPaintingStrategy(PaintingStrategy.SQUARED_HISTOGRAM);
+extlong.SetDefaultColor(CreateColor(0, 197, 49));
+extshort.SetPaintingStrategy(PaintingStrategy.SQUARED_HISTOGRAM);
+extshort.SetDefaultColor(CreateColor(255, 95, 95));
+revLONG.SetPaintingStrategy(PaintingStrategy.SQUARED_HISTOGRAM);
+revLONG.SetDefaultColor(CreateColor(116, 189, 232));
+revSHORT.SetPaintingStrategy(PaintingStrategy.SQUARED_HISTOGRAM);
+revSHORT.SetDefaultColor(CreateColor(234, 136, 255));
+REVextlong.SetPaintingStrategy(PaintingStrategy.SQUARED_HISTOGRAM);
+REVextlong.SetDefaultColor(CreateColor(116, 189, 232));
+REVextshort.SetPaintingStrategy(PaintingStrategy.SQUARED_HISTOGRAM);
+REVextshort.SetDefaultColor(CreateColor(234, 136, 255));
+
+plot LIVElong = # if x ==  #live_bartime then
+#highestall (live_bartimex) then
+                                       if   LIVE_LONGsignal is true then
+                                                                    if low == (LIVE_valley_low)  then
+                                                                                                        low else Double.NaN else Double.NaN ;
+                                 #    else Double.NaN ;
+plot LIVEshort = # if x == #live_bartime then
+#highestall (live_bartimex) then
+                                       if   LIVE_SHORTsignal  is true  then
+                                                                       if high ==  (LIVE_peak_high) then
+                                                                                                    low else Double.NaN else Double.NaN ;
+
+
+
+LIVElong.SetPaintingStrategy(PaintingStrategy.HISTOGRAM);
+LIVElong.SetLineWeight(1);
+LIVElong.SetDefaultColor(CreateColor(0, 197, 49));
+LIVEshort.SetPaintingStrategy(PaintingStrategy.HISTOGRAM);
+LIVEshort.SetLineWeight(1);
+LIVEshort.SetDefaultColor(CreateColor(255, 95, 95));
+
+
